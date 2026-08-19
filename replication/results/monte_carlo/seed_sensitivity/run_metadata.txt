@@ -1,0 +1,11 @@
+completed_utc: 2026-08-19 16:09:09 UTC
+grf_version: 2.4.0
+allow_unpinned_grf: FALSE
+threads: 15
+trees: 2000
+replications: 20
+n_train: 3000
+n_test: 30000
+dimension: 500
+multiplicity: 8
+elapsed_seconds: 182

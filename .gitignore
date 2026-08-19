@@ -1,0 +1,17 @@
+.DS_Store
+.Rhistory
+.RData
+.r-library/
+__pycache__/
+*.pyc
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+rerun_outputs/
+paper/source/main.pdf
+replication/data/kenya/*.dta

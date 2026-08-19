@@ -1,0 +1,45 @@
+{
+  "release_version": "1.0.0",
+  "release_date": "2026-08-19",
+  "repository": "https://github.com/YiNiu-bot/representation-multiplicity-causal-forests",
+  "paper": {
+    "title": "Representation Multiplicity in Causal Forests",
+    "path": "paper/representation_multiplicity_causal_forests.pdf",
+    "pages": 42,
+    "format": "journal-neutral article"
+  },
+  "software": {
+    "R": "4.3.3",
+    "grf": "2.4.0",
+    "grf_commit": "11ead50b374d3f7bd8cc88ee7205fb348efd1624",
+    "haven": "2.5.4"
+  },
+  "raw_kenya_data_included": false,
+  "fitted_household_objects_included": false,
+  "artifacts": [
+    {
+      "path": "paper/representation_multiplicity_causal_forests.pdf",
+      "sha256": "5931fcfe2340a2ea5fa142fe8ab371258c97061be73bdf6429b84624cb0e8b8a"
+    },
+    {
+      "path": "paper/source/main.tex",
+      "sha256": "c489ead7f241ba3ba72e00ac6d11258aae7fb3104e07800a742c3ee22e21a966"
+    },
+    {
+      "path": "paper/source/appendix.tex",
+      "sha256": "2b856ffbb0a39004688778fe1e379d89bae030b945ef70a7861fd5ebfbf81380"
+    },
+    {
+      "path": "paper/source/references.bib",
+      "sha256": "dc556e5a9f7f178cf35d936f233d4b505cb17c419f6990d3c25d3f2fbe841e69"
+    },
+    {
+      "path": "replication/metadata/claims_to_outputs.csv",
+      "sha256": "d1d986e3e178c8a706e2719419452861b8770b4b9b5fc65ae4baa419a6c18885"
+    },
+    {
+      "path": "replication/metadata/source_manifest.csv",
+      "sha256": "444196cea612b1dd9f31c06687305a47c857d044910d80fae972a078aae32827"
+    }
+  ]
+}

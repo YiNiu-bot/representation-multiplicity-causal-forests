@@ -1,0 +1,16 @@
+completed_utc: 2026-08-19 16:14:45 UTC
+run_scope: simulation
+grf_version: 2.4.0
+haven_version: 2.5.4
+allow_unpinned_grf: FALSE
+allow_data_mismatch: FALSE
+threads: 27
+real_trees: 2000
+real_seed_count: 3
+mc_trees: 800
+mc_reps: 20
+mc_n_train: 3000
+mc_n_test: 30000
+mc_class_sampled_max_switching: 0
+mc_class_sampled_max_prediction_difference: 0
+mc_class_sampled_max_value_difference: 0

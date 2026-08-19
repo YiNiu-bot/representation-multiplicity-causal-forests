@@ -1,0 +1,2 @@
+"grf_version","seed","training_observations","target_observations","trees","raw_dimension_canonical","raw_dimension_augmented","semantic_dimension","maximum_absolute_prediction_difference","maximum_absolute_variance_difference","maximum_absolute_standard_error_difference"
+"2.4.0",20260813,400,200,400,3,7,3,0,0,0

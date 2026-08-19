@@ -1,0 +1,5 @@
+"sample","correction","input_columns_before","input_columns_after","canonical_columns","input_equals_canonical","maximum_prediction_difference"
+"simulation","rank_quotient_exact_clones",83,20,20,TRUE,0
+"simulation","rank_quotient_monotone_encodings",22,20,20,TRUE,0
+"real_data","rank_quotient_exact_clones",143,16,16,TRUE,NA
+"real_data","rank_quotient_monotone_encodings",22,16,16,TRUE,NA

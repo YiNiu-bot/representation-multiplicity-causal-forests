@@ -1,0 +1,33 @@
+name: Reproducibility checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - name: Verify frozen release
+        run: ./scripts/verify_release.sh
+
+  build-paper:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install TeX and Poppler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y latexmk poppler-utils texlive-fonts-recommended texlive-latex-extra
+      - name: Build journal-neutral paper source
+        run: ./scripts/build_paper.sh

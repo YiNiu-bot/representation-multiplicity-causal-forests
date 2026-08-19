@@ -1,0 +1,1469 @@
+% Journal-neutral preprint using the supplied article template.
+\documentclass[12pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[letterpaper,margin=1in]{geometry}
+\usepackage{setspace}
+\usepackage{amsmath,amssymb,amsthm,mathtools,bm}
+\usepackage{booktabs,array,placeins,flafter}
+\usepackage[authoryear]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\hypersetup{
+  pdftitle={Representation Multiplicity in Causal Forests},
+  pdfauthor={Yi Niu},
+  pdfkeywords={causal forests, feature subsampling, randomized search,
+    representation invariance, redundant covariates}
+}
+
+\onehalfspacing
+\allowdisplaybreaks
+\emergencystretch=2em
+
+\newtheorem{assumption}{Assumption}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\newcommand{\E}{\mathbb E}
+\newcommand{\Prb}{\mathbb P}
+\newcommand{\R}{\mathbb R}
+\newcommand{\one}{\mathbf 1}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\supp}{\operatorname{supp}}
+\newcommand{\Pois}{\operatorname{Poisson}}
+\newcommand{\legend}[1]{%
+  \par\medskip\begin{minipage}{\linewidth}\footnotesize
+  \textit{Notes:} #1
+  \end{minipage}}
+
+\begin{document}
+\title{Representation Multiplicity in Causal Forests}
+\author{Yi Niu\thanks{Department of Economics, University of Pennsylvania. Email: \texttt{n1y1@sas.upenn.edu}}}
+\date{August 2026}
+\maketitle
+
+\begin{abstract}
+\noindent Feature-subsampled causal forests draw random sets of covariate columns, even
+when several columns encode the same split action. Equivalent recodings can
+therefore alter candidate-split
+probabilities without changing covariate information. I characterize the
+forest target by the cumulative resolution intensity of an unresolved effect
+component along a tree path. In a randomized two-modifier design, growing
+blocks of strictly increasing recodings make the scalar
+\texttt{causal\_forest} path in \texttt{grf} 2.4.0 converge to
+representation-dependent targets whose signs disagree for half the population.
+Every fixed finite representation covered by the theorem recovers the CATE
+under the stated conditions. Simulations and a
+cash-transfer ranking audit show that recoding sensitivity can greatly exceed
+seed sensitivity. A class-sampled forest restores exact invariance on a
+declared finite array under canonical routing and common class-level randomness.
+
+\medskip
+\noindent\textbf{Keywords:} causal forests; feature subsampling; policy learning;
+randomized search; representation invariance; redundant covariates.
+
+\medskip
+\noindent\textbf{JEL Classification:} C14, C21, C55
+\end{abstract}
+
+\newpage
+
+\section{Introduction}\label{sec:intro}
+
+Suppose two analysts fit the same causal forest to the same data. The first
+includes household size. The second retains household size together with its
+logarithm and several split-equivalent recodings. The two representations
+contain the same information and induce the same threshold partitions, but
+feature subsampling treats their columns as separate candidates. Household size
+therefore receives several chances to enter the split search. Additional trees
+only estimate the resulting representation-specific infinite-forest limit more
+precisely.
+
+This distinction matters when forests are used to rank treatment effects. A
+modifier affects a leaf prediction after the tree selects a split that
+separates its relevant states. Candidate inclusion alone does not suffice,
+because a stronger unresolved modifier may win the split. The probability of
+selection accumulates over the nodes reached before the leaf stops. I call the
+sum of these history-conditional selection probabilities the component's
+cumulative resolution intensity. Its exact resolution probability
+is one minus the expected survival product. When every one-node probability vanishes, a
+limiting intensity \(\lambda\) gives resolution probability
+\(1-e^{-\lambda}\).
+
+The main result, Theorem~\ref{thm:adaptive}, studies the scalar
+\texttt{causal\_forest} path in \texttt{grf} 2.4.0 under a two-modifier
+randomized design. One representation repeats the weaker modifier and leaves
+the stronger modifier as a singleton. The other reverses their roles. Both
+representations generate the same sigma-field at every sample size. When the
+number of recodings grows fast enough relative to path depth, the singleton is
+unlikely to be selected before stopping. The two forests then converge to
+different component targets, and their signs disagree for half the population.
+With fixed \texttt{mtry}, the boundary is proportional to path depth. Under the
+package-default \texttt{mtry} scaling, within the same asymptotic learner
+sequence, it is proportional to squared path depth. Every fixed finite
+representation eventually lies on the recovery side of the boundary. The
+inconsistent limits therefore concern growing representation sequences. The
+same mechanism applies to any fixed number of signed effect modifiers.
+
+The proof uses the general target formula in Theorem~\ref{thm:opportunity}.
+For an honest score forest, a component with limiting cumulative intensity
+\(\lambda\) enters the target with coefficient \(1-e^{-\lambda}\). This
+coefficient measures the attenuation caused by incomplete access to the
+component. Applying the formula requires
+learner-specific leaf, aggregation, and hazard arguments. Section~\ref{sec:source}
+provides those arguments for the signed \texttt{grf} design.
+
+The theorem permits exact copies and deterministic strictly increasing
+recodings, which preserve the source split library and routing rule. The
+simulations and Kenya exercise ask how large the resulting sensitivity can be
+in finite samples. In the
+highest-dimensional Monte Carlo design, split-equivalent recodings produce
+opposite-signed CATE estimates for 46.2 percent of evaluation observations,
+compared with 0.09 percent after changing only the forest seed. In public data
+from the Kenya cash-transfer experiment of Egger et al.\ \citeyearpar{egger2022},
+author-constructed preprocessing-style bundles change selected-set membership
+for 5.9 to 7.5 percent of households under a hypothetical top-half ranking.
+Both exercises compare the stability of fitted rankings across representations.
+Assessing accuracy or welfare would require a different design. The recodings
+were constructed for this paper and did not appear in the original study.
+
+The paper also develops a class-sampled forest for a declared finite array. It
+certifies columns that generate the same threshold actions on a declared array
+and samples the resulting classes instead of raw columns. Under class-indexed
+randomness and canonical routing, Proposition~\ref{prop:quotient} gives exact
+equality of partitions, predictions, reported standard errors, and selected
+sets on that array. Extending this equality to new covariate values requires an
+additional routing rule.
+
+Earlier work documents the underlying candidate-set effect. Duplicate columns
+enter randomized candidate sets more often and can change prediction or
+variable importance
+\citep{louppe2014,strobl2007,tolosi2011,gregorutti2017,kubus2018}.
+Existing remedies reduce the influence of redundant features.
+\citet{chen2013module} sample modules before choosing representative variables,
+whereas \citet{colot2021} weight features inversely by estimated cluster size.
+These studies establish the duplicate-column diagnosis and motivate group-aware
+feature sampling. The question here is how the same mechanism changes
+causal-forest targets.
+
+High-dimensional forest theory allows the ambient dimension, candidate budget,
+and path depth to vary. Its recovery bounds depend on candidate access along a path
+\citep{chi2022high,klusowski2024large,mei2026rosa}. The index
+\(\mathcal I_n=H_n\E Q_{M_n}/M_n\) is the corresponding feature-access measure
+for the source law studied here, where \(H_n\) is path depth, \(Q_{M_n}\) is the
+nodewise candidate count, and \(M_n\) is the number of raw columns. The paired
+representations in Theorem~\ref{thm:adaptive} generate the
+same sigma-field but assign different access probabilities to the same split
+actions, and the theorem traces this difference into representation-specific
+causal-forest targets, sign reversals, regret, and a sharp multiplicity boundary
+for \texttt{grf}. Theorem~\ref{thm:opportunity} maps resolution hazards into
+target coefficients, and Theorem~\ref{thm:adaptive} verifies its conditions for
+the source learner.
+
+Proposition~\ref{prop:quotient} sharpens the established grouping remedy. It
+uses exact split-action certificates and a coupling that preserves every listed
+forest output on a declared finite array. The result differs from approximate
+correlation clusters and from exhaustive-CART invariance to monotone recoding
+\citep{hong2026}. Related work on forest randomization, honest inference,
+pointwise convergence, and accuracy provides further background
+\citep{biau2012,klusowski2021,mei2026,wager2018,athey2019,
+cattaneo2022pointwise,cattaneo2025accuracy}. The treatment-ranking
+interpretation follows \citet{hirano2009}, \citet{kitagawa2018}, and
+\citet{athey2021}.
+
+Section~\ref{sec:framework} develops the hazard formula. Section~\ref{sec:source}
+maps it to the signed \texttt{grf} design and derives the multiplicity boundary.
+Section~\ref{sec:quotient} presents the class-sampled correction, and
+Section~\ref{sec:evidence} reports the simulation and cash-transfer diagnostics.
+Appendix~\ref{app:proofs} contains the proofs and source verification. The
+replication archive documents every simulation and empirical recoding.
+
+\section{Resolution Hazards and Forest Targets}\label{sec:framework}
+
+Let \(\{(Y_i,W_i,X_i)\}_{i=1}^n\) be an i.i.d. training sample, where \(Y_i\)
+is the observed outcome, \(W_i\in\{0,1\}\) is treatment, and \(X_i\) contains
+the covariates, and let \(\mathcal D_n\) denote this sample. Let \(Y_i(w)\)
+denote the potential outcome under treatment
+\(w\), and let \(P_X\) denote the marginal law of \(X_i\). Define
+\[
+\tau(x)=\E\{Y_i(1)-Y_i(0)\mid X_i=x\}.
+\]
+
+At each internal node, a tree draws candidate covariate columns, evaluates
+their admissible threshold splits, and selects one using the stated criterion
+and tie rule. A forest averages predictions across randomized trees. We call
+this recursive procedure \emph{tree search}.
+
+Let \(\mathcal X\) denote the support of \(X\). A raw representation is a
+measurable map from \(\mathcal X\) to \(\mathbb R^M\). We write it as
+\(R=(R_1,\ldots,R_M)\), with \(R(x)=(R_1(x),\ldots,R_M(x))\). Throughout the
+asymptotic results,
+\(R=R_n\) and \(M=M_n\) may vary with \(n\). The index is suppressed when it
+does not aid the exposition. Two representations are information equivalent if
+\begin{equation*}
+\sigma\{R(X)\}=\sigma\{\widetilde R(X)\}.
+\end{equation*}
+Tree search requires a more restrictive equivalence. At a node containing
+index set \(I\), column \(j\) generates the unordered threshold-split library
+\begin{equation*}
+\mathcal H_j(I)=
+\left\{
+\{L,I\setminus L\}:L=\{i\in I:R_j(X_i)\le a\},\ a\in\R
+\right\},
+\end{equation*}
+under declared tie and missing-value rules. Columns with the same library at
+every reachable node are \emph{split equivalent}. The resulting equivalence
+classes are the split-action classes, and \(G\) denotes their number.
+
+Three notions of equivalence will be useful. Information equivalence compares
+sigma-fields. Split equivalence compares the actions available to tree search.
+Finite-array certification, introduced in Section~\ref{sec:quotient}, verifies
+split equivalence only on a declared array. Exact copies satisfy all three
+notions on every array, but the converses need not hold.
+
+The signed design in Section~\ref{sec:source} provides the concrete mechanism.
+One of two effect components receives \(c_n\) raw labels and the other remains a
+singleton. If the singleton enters the candidate set at a node with probability
+\(\omega_n\) and a target path has order \(H_n\) internal nodes, then
+\(\mathcal I_n=H_n\omega_n\) is its cumulative-inclusion index. Vanishing
+\(\mathcal I_n\) leads to omission, while diverging \(\mathcal I_n\) leads to
+recovery. The abstract result below expresses the same idea through
+history-conditional successful-resolution hazards.
+
+To state the abstract transfer result, consider a scalar honest-score forest.
+Each tree uses a splitting sample to construct an adaptive partition from random
+subsets of representation columns and an independent estimation sample to
+compute its leaf moment. Let \(\Theta\) denote the randomization of a generic
+tree. The observation, covariate, tree-state, and randomization spaces are
+standard Borel. All split, tie, stopping, leaf, score, and prediction maps are
+jointly measurable in their displayed arguments.
+Under representation \(R\), let \(I_n^{\rm est}\) be its estimation
+indices and let \(L_n^R(x)\) be the terminal cell containing \(x\).
+Let \(\mathcal Z_n\) be the sigma-field generated by a standard-Borel random
+element containing the score-training folds, fitted nuisance functions, and
+their training randomization. Let \(\Gamma_n(y,w,x)\) be a scalar score map
+whose randomness is \(\mathcal Z_n\)-measurable, and
+write \(\Gamma_{i,n}=\Gamma_n(Y_i,W_i,X_i)\), with the fold for observation
+\(i\) understood when scores are cross-fitted. Let \((Y',W',X')\) be a fresh
+observation, independent of the training sample and all nuisance and tree
+randomization. Define
+\begin{equation*}
+\begin{aligned}
+N_n^{R,{\rm est}}(x)
+&=\sum_{i\in I_n^{\rm est}}
+\one\{X_i\in L_n^R(x)\},\\
+\widetilde T_n^R(x)
+&=\frac{1}{N_n^{R,{\rm est}}(x)}
+\sum_{i\in I_n^{\rm est}}
+\one\{X_i\in L_n^R(x)\}\Gamma_{i,n}.
+\end{aligned}
+\end{equation*}
+Set \(\widetilde T_n^R(x)=0\) on an empty estimation leaf. Here
+\(N_n^{R,{\rm est}}(x)\) is the number of estimation observations in the
+terminal cell containing \(x\), and \(\widetilde T_n^R(x)\) is their average
+score. Empty estimation
+leaves are pruned, so the denominator is positive whenever a tree contributes
+at \(x\). Conditional means on population-null leaves may be assigned any
+fixed version because the statements below are integrated with respect to
+\(P_X\). For \(b=1,\ldots,B_n\), append the index \(b\) to these objects when
+they are generated by tree \(b\). Let
+\(\widehat T_n^R:\mathcal X\to\mathbb R\) be the prediction returned by the
+\(B_n\)-tree forest.
+
+\begin{assumption}\label{ass:semantic-score}
+Along the representation sequence \(R_n\), there exist a fixed finite number
+\(G\), a constant \(\mu\), and measurable functions
+\(f_1,\ldots,f_G:\mathcal X\to\mathbb R\) satisfying
+\(\E f_g(X)=0\) for \(g=1,\ldots,G\) and
+\(\sum_{g=1}^G\|f_g\|_\infty<\infty\), and a function
+\(T^*:\mathcal X\to\mathbb R\) such that
+\begin{equation*}
+\begin{gathered}
+T^*(x)=\mu+\sum_{g=1}^G f_g(x),\\
+\left\|\E\{\Gamma_n(Y',W',X')\mid X'=\cdot,\mathcal Z_n\}-T^*\right\|_\infty=o_p(1).
+\end{gathered}
+\end{equation*}
+\end{assumption}
+
+Here \(T^*\) is the limiting conditional score mean. Centering the components
+sets \(\mu=\E T^*(X)\), and \(f_g\) records the deviation associated with
+split-action class \(g\). The decomposition is tied to the declared classes and
+cannot be recovered from \(T^*\) without that structure. The uniform approximation requires the conditional score
+mean to approach \(T^*\) over \(\mathcal X\), while the bound on
+\(\sum_g\|f_g\|_\infty\) keeps the component sum uniformly bounded. In the
+signed design below, \(T^*=\tau_a\) and the two components are
+\(a_1s_1\) and \(a_2s_2\). More generally, a component
+may be an effect modifier, a regression component, a conditional-moment
+component, or another feature of a scalar generalized-forest score.
+
+For a target \(x\) and split-action class \(g\), a split \emph{resolves} the class
+when it uses that class's threshold action, making the target's descendant leaf
+locally constant in the corresponding component. Candidate availability alone
+is not resolution. A failure history records the entire unresolved path up to
+arrival at the current node. At any nonterminal history,
+\(\rho_{g,n,t}^{R,0}(x)\) is the conditional probability that the next tree
+transition resolves \(g\). Let \(K_{g,n,t}^{R,0}\) be the regular conditional
+law of the next history given failure to resolve \(g\). Complete-history
+conditioning imposes no Markov restriction. Standard Borelness gives jointly
+measurable versions of the finite collection of kernels. If the current hazard
+is one, that node remains in the product with zero failure factor and the next
+state is absorbing. Histories reachable only after an earlier null failure are
+assigned zero hazard and the absorbing transition.
+Appendix~\ref{app:proofs} records the construction.
+
+The potential no-resolution path starts from the original root law and evolves
+according to \(K_{g,n,t}^{R,0}\). On every positive-probability branch it retains
+the raw dimension, candidate law, stopping rule, and competing actions of the
+original tree. Let \(\mathcal F_{g,n,t-1}^{R,0}(x)\) contain the complete
+failure history upon arrival at node \(t\). The event that node \(t\) is reached
+and its current state are \(\mathcal F_{g,n,t-1}^{R,0}(x)\)-measurable, making
+the hazard predictable. Each split sends the target to a strict subset of the
+finite splitting sample, and a null failure branch is absorbing. The path
+therefore terminates after finitely many internal nodes. Denote this number by
+\(J_{g,n}^{R,0}(x)\).
+
+On the actual target path, let \(S_{g,n,t}^R(x)\) indicate that the split at
+internal node \(t\) resolves class \(g\), and set it to zero after the path
+stops. The success rule is part of the forest specification. Define
+\begin{equation*}
+D_{g,n}^R(x)=\one\{S_{g,n,t}^R(x)=1\text{ for some }t\ge1\}.
+\end{equation*}
+A class can enter the candidate set without being selected for the split.
+Sequential conditioning gives the exact failure-path identity
+\begin{equation}\label{eq:survival-product}
+\E_\Theta\{1-D_{g,n}^R(x)\mid\mathcal D_n,\mathcal Z_n\}
+=\E_{\Theta^0}\!\left[
+\prod_{t=1}^{J_{g,n}^{R,0}(x)}
+\{1-\rho_{g,n,t}^{R,0}(x)\}
+\middle|\mathcal D_n,\mathcal Z_n\right],
+\end{equation}
+for \(P_X\)-almost every \(x\), where \(\Theta^0\) denotes potential
+failure-path randomization. The product equals one when
+\(J_{g,n}^{R,0}(x)=0\).
+Define the cumulative intensity and maximal one-node hazard by
+\begin{equation*}
+\Lambda_{g,n}^R(x)
+=\sum_{t=1}^{J_{g,n}^{R,0}(x)}\rho_{g,n,t}^{R,0}(x),
+\qquad
+\bar\rho_{g,n}^R(x)
+=\max_{t\le J_{g,n}^{R,0}(x)}\rho_{g,n,t}^{R,0}(x),
+\end{equation*}
+with both quantities zero when \(J_{g,n}^{R,0}(x)=0\). Thus
+\(\Lambda_{g,n}^R\) is a sum of conditional success probabilities, while the
+exact conditional failure probability is the expected product in
+\eqref{eq:survival-product}.
+
+Expectations bearing the subscript \(\Theta\) or \(\Theta^0\) integrate over
+actual-tree or potential failure-path randomization,
+and \(\Prb_X\) denotes probability for an independent evaluation covariate with
+law \(P_X\). All integrals and \(L^p(P_X)\) norms below use the same evaluation
+law. For a measurable limiting function
+\(\lambda_g^R:\mathcal X\to[0,\infty]\), use the convention
+\(e^{-\infty}=0\). Convergence to an extended-real limit is understood after
+the transformation \(u\mapsto u/(1+u)\).
+
+\begin{assumption}\label{ass:honest-resolution}
+Along the sequence \(R=R_n\), the following conditions hold uniformly over the
+fixed finite set of split-action classes.
+\begin{enumerate}
+\renewcommand{\labelenumi}{(\roman{enumi})}
+\item \emph{Honest leaf and component reduction.} The honest leaf statistic estimates its score
+mean.
+\begin{multline}\label{eq:honest-score-leaf}
+\E_\Theta\Bigg[
+\int\left|\widetilde T_n^R(x)-
+\E\{\Gamma_n(Y',W',X')\mid X'\in L_n^R(x),
+\mathcal D_n,\Theta,\mathcal Z_n\}
+\right|dP_X(x)\\
+\Bigm|\mathcal D_n,\mathcal Z_n\Bigg]=o_p(1).
+\end{multline}
+For each component, the conditional leaf mean approaches \(f_g(x)\) after
+resolution and zero before resolution, in the following integrated sense.
+\begin{multline}\label{eq:component-leaf-reduction}
+\sum_{g=1}^G\E_\Theta\Bigg[
+\int\left|
+\E\{f_g(X')\mid X'\in L_n^R(x),\mathcal D_n,\Theta,\mathcal Z_n\}
+-D_{g,n}^R(x)f_g(x)
+\right|dP_X(x)\\
+\Bigm|\mathcal D_n,\mathcal Z_n\Bigg]=o_p(1).
+\end{multline}
+\item \emph{Forest aggregation.} The reported forest admits the honest
+linearization
+\begin{equation}\label{eq:general-forest-linearization}
+\left\|\widehat T_n^R-
+\frac1{B_n}\sum_{b=1}^{B_n}\widetilde T_{b,n}^R
+\right\|_{L^1(P_X)}=o_p(1),
+\qquad B_n\to\infty,
+\end{equation}
+and, conditional on \((\mathcal D_n,\mathcal Z_n)\), every tree has the same
+marginal law as the generic tree \(\Theta\). Under this same conditioning, the
+tree randomizers are independent or form mutually independent groups of
+uniformly bounded size. For some
+constant \(C<\infty\),
+\[
+\sup_{n,b}\E_\Theta\!\left[
+\|\widetilde T_{b,n}^R\|_{L^2(P_X)}^2
+\middle|\mathcal D_n,\mathcal Z_n\right]\le C
+\quad\text{with probability tending to one}.
+\]
+\item \emph{Hazard convergence.} Under the joint law of
+\((\mathcal D_n,\mathcal Z_n)\), an independent \(X\sim P_X\), and a fresh
+potential failure path generated by the preceding kernels,
+\begin{equation}\label{eq:hazard-limit-condition}
+\Lambda_{g,n}^R(X)\longrightarrow_p\lambda_g^R(X),
+\qquad
+\bar\rho_{g,n}^R(X)\longrightarrow_p0
+\quad\text{on }\{\lambda_g^R(X)<\infty\},
+\end{equation}
+\end{enumerate}
+\end{assumption}
+
+Assumption~\ref{ass:honest-resolution} gives the estimator conditions used in
+Theorem~\ref{thm:opportunity}. Part (i) links honest leaves to the conditional
+score mean and records whether each component has been resolved. Part (ii)
+approximates the reported forest by the average of its linearized trees. Part
+(iii) requires convergence of the cumulative resolution hazard and excludes a
+nonnegligible one-node hazard when that limit is finite. Section~\ref{sec:source}
+verifies these conditions for the scalar \texttt{grf} path and design stated
+there.
+
+Assumptions~\ref{ass:semantic-score} and \ref{ass:honest-resolution}(i) imply
+the component leaf reduction
+\begin{equation}\label{eq:semantic-leaf-reduction}
+\E_\Theta\left[
+\left\|\widetilde T_n^R-
+\mu-\sum_{g=1}^GD_{g,n}^R f_g\right\|_{L^1(P_X)}
+\middle|\mathcal D_n,\mathcal Z_n\right]=o_p(1).
+\end{equation}
+
+The next theorem isolates the probabilistic step that is common across
+learners. Section~\ref{sec:source} verifies its assumptions for the scalar
+\texttt{grf} learner and obtains the source-specific result in
+Theorem~\ref{thm:adaptive}.
+
+\begin{theorem}[Resolution hazards and forest targets]\label{thm:opportunity}
+Under Assumptions~\ref{ass:semantic-score} and
+\ref{ass:honest-resolution},
+\begin{equation}\label{eq:general-opportunity-target}
+\left\|\widehat T_n^R-
+\left[\mu+\sum_{g=1}^G
+\{1-e^{-\lambda_g^R(\cdot)}\}f_g\right]
+\right\|_{L^1(P_X)}\longrightarrow_p0.
+\end{equation}
+\end{theorem}
+
+\pagebreak[3]
+The coefficient function on \(f_g\) is
+\(1-e^{-\lambda_g^R(\cdot)}\). It vanishes with the hazard, lies strictly
+between zero and one for a finite positive hazard, and approaches one as the
+hazard diverges.
+Information-equivalent representations share a target when their componentwise
+hazards share a limit. Different hazard limits can produce different targets.
+
+\section{A Signed \texttt{grf} Design}\label{sec:source}
+
+\subsection{Design and representations}
+
+For the signed forest result, let \(X=(X_1,X_2)\sim
+\operatorname{Unif}([0,1]^2)\), set
+\[
+\iota_j(X)=\one\{X_j\ge1/2\},
+\qquad s_j(X)=2\iota_j(X)-1,
+\]
+and fix constants \(0<\underline a<\overline a<\infty\) and
+\(0<\Delta_a<\overline a-\underline a\). The coefficient region is
+\begin{equation*}
+\mathcal C_a=
+\left\{(a_1,a_2):
+\underline a\le a_1<a_2\le\overline a,
+\ a_2-a_1\ge\Delta_a
+\right\},
+\end{equation*}
+and
+\begin{equation*}
+\tau_a(X)=a_1s_1(X)+a_2s_2(X).
+\end{equation*}
+For each \(n\) and \(a\in\mathcal C_a\), let
+\(\{(Y_{i,n},W_{i,n},X_{i,n})\}_{i=1}^n\) be independent and identically
+distributed under \(P_a\) according to the randomized model
+\begin{equation}\label{eq:production-dgp}
+Y(w)=m_0(X)+w\tau_a(X)+U,\qquad \E(U\mid X,W)=0,
+\end{equation}
+where
+\begin{equation*}
+W\perp\{Y(0),Y(1)\}\mid X,\qquad
+\Prb(W=1\mid X)=\frac12,\qquad Y=Y(W).
+\end{equation*}
+Here \(m_0\) is a measurable baseline outcome function and \(U\) is the
+disturbance.
+The function \(m_0\) and the conditional law of \(U\) given \((X,W)\) are held
+fixed as \(a\) varies over \(\mathcal C_a\).
+We suppress the triangular-array subscript on observations and write \(P_X\)
+for the \(X\)-marginal of \(P_a\). Cross-fitting fold labels, tree subsample
+indices, honesty allocations, and node-level candidate draws are generated
+independently of the observations. A fixed representation-independent order
+resolves any exact criterion ties. A
+cross-fitted nuisance prediction for observation \(i\) excludes the fold
+containing \(i\). These randomizations are mutually independent except when a
+common-random-number coupling is explicitly used to compare two marginally
+identical learner specifications.
+The assignment probability \(e(X)=1/2\) is known. Write
+\(m_a(X)=\E(Y\mid X)=m_0(X)+\tau_a(X)/2\) and
+\begin{equation*}
+\psi_\theta(Y,W,X;m_a)
+=(W-1/2)\{Y-m_a(X)-\theta(W-1/2)\}.
+\end{equation*}
+For a parent cell \(C\), the population solution is
+\(\theta_C=\E\{\tau_a(X)\mid X\in C\}\), its Jacobian is
+\(A_C=\E\{(W-e(X))^2\mid X\in C\}=1/4\), and the GRF linearized score
+\(\phi_C(Y,W,X)=A_C^{-1}\psi_{\theta_C}(Y,W,X;m_a)\) satisfies
+\begin{equation*}
+\E\{\phi_C(Y,W,X)\mid X=x\}=\tau_a(x)-\theta_C.
+\end{equation*}
+
+For \(g\in\{1,2\}\), let \(c_n\ge1\) be an integer. For
+\(\ell=1,\ldots,c_n\), let \(\varphi_{g\ell n}:[0,1]\to\mathbb R\) be a
+deterministic strictly increasing map with finite values, and set
+\(X_g^{(\ell)}=\varphi_{g\ell n}(X_g)\). The identity map gives an exact copy.
+Define
+\begin{align*}
+R_{1,n}(X)
+&=\{X_1^{(1)},\ldots,X_1^{(c_n)},X_2\},\\
+R_{2,n}(X)
+&=\{X_1,X_2^{(1)},\ldots,X_2^{(c_n)}\}.
+\end{align*}
+Thus \(M_n=c_n+1\). Strict monotonicity gives the same threshold partitions for
+every column in a repeated block. In exact arithmetic it also preserves source
+routing because
+\(\varphi_{g\ell n}(x)\le\varphi_{g\ell n}(t)\) if and only if \(x\le t\).
+Proposition~\ref{prop:quotient} treats more general recodings on a declared
+array under canonical class routing.
+For every \(n\),
+\begin{equation*}
+\sigma\{R_{1,n}(X)\}=\sigma\{R_{2,n}(X)\}=\sigma(X_1,X_2).
+\end{equation*}
+Representation \(R_{1,n}\) repeats the weaker modifier \(X_1\) and leaves the
+stronger modifier \(X_2\) as a singleton. Representation \(R_{2,n}\) repeats
+the stronger modifier and leaves the weaker one as a singleton. The main
+comparison asks whether a singleton is selected before the target path reaches
+its leaf.
+In this signed design, each effect component corresponds one-to-one to a
+split-action class. We use \emph{component} for the term in the CATE and
+\emph{class} for the collection of column labels sampled by the tree.
+
+\subsection{Source learner and verification objects}
+
+Each tree draws candidate columns, evaluates their admissible threshold actions,
+chooses the largest source criterion, and repeats until the stopping rule is
+met. An independent honest sample then computes the leaf moment. The learner
+follows the causal-forest source code in \texttt{grf} version 2.4.0 at commit
+\texttt{11ead50b}, with unit sample weights,
+\texttt{W.hat=1/2}, \texttt{stabilize.splits=TRUE}, and zero imbalance
+penalty \citep{grfsource240}. Each tree draws \(s_n\) observations without
+replacement and divides them honestly into splitting and estimation samples
+whose fractions are bounded away from zero. At a node with \(M\) representation
+columns, the source candidate-count rule is
+\begin{equation}\label{eq:grf-q}
+N_M\sim\Pois(\xi_M),\qquad Q_M=\max\{1,\min(N_M,M)\},
+\end{equation}
+where \(\xi_M=\texttt{mtry}\) \citep{grfreference}. Conditional on \(Q_M=q\),
+the implementation samples \(q\) columns uniformly without replacement.
+At each node it evaluates the admissible thresholds of those columns and uses a
+fixed tie order. For probability calculations, the independent node draws can
+be indexed in advance by tree and node address. This indexing is an analytical
+device and leaves the source learner's distribution unchanged. The package
+continues to use its sequential pseudorandom number generator.
+Let \(k_n\) be the source minimum node size, the required count on each side
+of the parent treatment mean within each child. Write \(m=m_a\), and let
+\(\widehat m\) be its cross-fitted estimator. We require
+\begin{equation}\label{eq:nuisance-rate}
+\|\widehat m-m\|_\infty=o_p(1),
+\qquad \|\widehat m\|_\infty=O_p(1)
+\end{equation}
+uniformly over \(a\in\mathcal C_a\). Write
+\[
+\widetilde Y_i=Y_i-\widehat m(X_i),
+\qquad Z_i=W_i-1/2\in\{-1/2,1/2\}.
+\]
+For a splitting node \(C\), write \(n_C=|C|\), let bars denote unweighted
+node averages, and set
+\begin{equation*}
+\widehat A_C=\frac14-\bar Z_C^2,
+\qquad
+\widehat\theta_C
+=\frac{\overline{Z\widetilde Y}_C-\bar Z_C\bar{\widetilde Y}_C}
+{\widehat A_C}.
+\end{equation*}
+For a candidate split \((j,t)\), write
+\(C_L(j,t)\) and \(C_R(j,t)\) for its children, and let
+\(\mathcal Q_C(j,t)\) denote the corresponding population CART criterion.
+This criterion is the child-size-weighted squared contrast in mean score
+between the two children. We use \emph{split gain} for the value of this
+criterion. Appendix~\ref{app:proofs} records the source binding
+and verifies the exact scalar relabeling formula.
+Suppress the arguments when clear. For \(A\in\{C_L,C_R\}\), write
+\(n_A=|A|\) and
+\(\widehat p_{A\mid C}=n_A/n_C\). Under the preceding specialization, the scalar
+source relabeling and a rescaling of its split criterion are exactly
+\begin{align}
+\Psi_{i,C}
+&=(Z_i-\bar Z_C)
+\{\widetilde Y_i-\bar{\widetilde Y}_C
+-\widehat\theta_C(Z_i-\bar Z_C)\},
+\label{eq:source-relabel}\\
+\widehat{\mathcal Q}_C^{\rm grf}(j,t)
+&=16\widehat p_{C_L\mid C}\widehat p_{C_R\mid C}
+\bigl(\bar\Psi_{C_L}-\bar\Psi_{C_R}\bigr)^2.\notag
+\end{align}
+The factor 16 does not affect the source argmax. The source option
+\texttt{alpha} is the minimum information fraction. Write its fixed value as
+\(\beta\in(0,1/4)\). At
+node \(C\), let \(\mathcal S_n(C)\) contain each pair \((j,t)\) such that
+\(j\) is sampled under \eqref{eq:grf-q}, \(t\) is one of the finite source
+thresholds for column \(j\) in \(C\), and both children
+\(A\in\{C_L(j,t),C_R(j,t)\}\) contain at least \(k_n\) observations with
+\(Z_i<\bar Z_C\) and at least \(k_n\) with \(Z_i>\bar Z_C\), while satisfying
+\(n_A(1/4-\bar Z_A^2)\ge\beta n_C(1/4-\bar Z_C^2)\).
+The following condition applies to every node reachable under either
+representation or along either potential failure path in the proof, for every
+realized nonempty candidate set. We impose
+\begin{equation}\label{eq:source-split-nondegeneracy}
+\Prb\!\left\{
+\max_{(j,t)\in\mathcal S_n(C)}\widehat{\mathcal Q}_C^{\rm grf}(j,t)>0
+\text{ at every such }C
+\text{ with }\mathcal S_n(C)\ne\emptyset
+\right\}=1.
+\end{equation}
+The probability integrates over the sample, tree subsampling, honesty split,
+nuisance estimates, outcomes, and candidate randomization. We impose this
+continuation probability directly because the density assumption below is
+insufficient by itself. It
+ensures that the unpenalized source procedure continues whenever an admissible
+candidate action remains. It is used in the proof to obtain the common path-depth
+envelope. It places no ordering restriction on competing split gains.
+
+For comparison define the linear orthogonal score
+\begin{equation*}
+\widehat\Gamma_i=4(W_i-1/2)\{Y_i-\widehat m(X_i)\}.
+\end{equation*}
+Its CART criterion is
+\begin{equation*}
+\widehat{\mathcal Q}_C^\Gamma(j,t)
+=\widehat p_{C_L\mid C}\widehat p_{C_R\mid C}
+ (\overline\Gamma_{C_L}-\overline\Gamma_{C_R})^2
+\end{equation*}
+over the same candidate library. Candidate counts and column samples are
+independent across nodes and independent of the other
+tree randomization. The estimation half supplies the observations used to
+compute leaf means, and empty
+leaves are pruned.
+
+For a forest with \(B_n\) trees and an independent target \(x\), let
+\(\alpha_i(x)\) be its nonnegative weights over nonempty honest leaves, with
+\(\sum_i\alpha_i(x)=1\), and define
+\[
+\bar Z_\alpha(x)=\sum_i\alpha_i(x)Z_i,
+\quad
+\bar{\widetilde Y}_\alpha(x)=\sum_i\alpha_i(x)\widetilde Y_i,
+\quad
+\overline{Z\widetilde Y}_\alpha(x)=\sum_i\alpha_i(x)Z_i\widetilde Y_i.
+\]
+The source prediction is a local covariance ratio because the forest solves a
+weighted treatment-effect moment inside the target's leaves. It is exactly
+\begin{equation*}
+\widehat T_{n,B_n}(x)
+=\frac{\overline{Z\widetilde Y}_\alpha(x)
+-\bar Z_\alpha(x)\bar{\widetilde Y}_\alpha(x)}
+{1/4-\bar Z_\alpha(x)^2}.
+\end{equation*}
+Its forest-level linear comparator
+\begin{equation*}
+\check T_{n,B_n}(x)
+=\sum_i\alpha_i(x)\widehat\Gamma_i
+=4\overline{Z\widetilde Y}_\alpha(x)
+\end{equation*}
+is the forest average of the generic honest leaf scores
+\(\widetilde T_{b,n}^R(x)\) defined in Section~\ref{sec:framework}. It satisfies
+the exact decomposition
+\begin{equation}\label{eq:source-prediction-remainder}
+\widehat T_{n,B_n}(x)-\check T_{n,B_n}(x)
+=\frac{4\bar Z_\alpha(x)
+\{4\overline{Z\widetilde Y}_\alpha(x)\bar Z_\alpha(x)
+-\bar{\widetilde Y}_\alpha(x)\}}
+{1-4\bar Z_\alpha(x)^2}.
+\end{equation}
+The package reports \(\widehat T_{n,B_n}\) as its CATE estimate. The theorem
+below shows that its probability limit can differ from the true CATE when the
+representation changes candidate access.
+Let \(\widehat T_{h,n}\) and \(\check T_{h,n}\), \(h\in\{1,2\}\),
+denote the source forest and its linear comparator under \(R_{h,n}\), each
+with \(B_n\) trees. The production-rate condition is
+\begin{equation}\label{eq:production-rates}
+\begin{gathered}
+s_n\to\infty,\qquad s_n/n\le\bar s<1,\qquad
+k_n\to\infty,\qquad k_n/s_n\to0,\qquad
+k_n/\log(B_ns_n)\to\infty,\\
+B_n\to\infty,\qquad
+H_n:=\log(s_n/k_n)\to\infty.
+\end{gathered}
+\end{equation}
+The quantity \(H_n\) is the effective path depth. A sequence of roughly
+balanced splits reduces a root sample of order \(s_n\) to the minimum leaf
+scale \(k_n\) in order \(\log(s_n/k_n)\) steps.
+
+\begin{assumption}\label{ass:source-regularity}
+Uniformly over \(a\in\mathcal C_a\), the outcome is bounded,
+\(U\mid X,W\) has a continuous density on a bounded support, the cross-fitted nuisance estimates
+satisfy \eqref{eq:nuisance-rate}, and the source nondegeneracy condition
+\eqref{eq:source-split-nondegeneracy} holds. Tree groups used for variance
+estimation have uniformly bounded size, and the sequences
+\((s_n,k_n,B_n)\) satisfy \eqref{eq:production-rates}.
+\end{assumption}
+
+Boundedness and the nuisance rate control the honest score. Split
+nondegeneracy and the production rates support the leaf and forest
+approximations. The appendix verifies
+Assumptions~\ref{ass:semantic-score} and \ref{ass:honest-resolution} for the
+source forest under these conditions.
+
+\subsection{Main result: multiplicity and forest limits}\label{sec:resolution-intensity}
+
+Define the unconstrained treatment rules
+\begin{equation*}
+\widehat\pi_{h,n}(x)=\one\{\widehat T_{h,n}(x)>0\},
+\qquad
+\pi_a^*(x)=\one\{\tau_a(x)>0\}=\one\{s_2(x)=1\}.
+\end{equation*}
+
+Let \(r_g\) count the representation columns in split-action class \(g\), and set
+\[
+\bm r=(r_1,\ldots,r_G)^\top,\qquad M=\sum_{g=1}^Gr_g.
+\]
+At node \(C\), class \(g\) has finite split-action set
+\(\mathcal A_g(C)\), and let
+\(\mathcal G(C)=\{g:\mathcal A_g(C)\ne\varnothing\}\) be the active classes.
+For \(g\in\mathcal G(C)\) and \(u\in\mathcal A_g(C)\), write
+\(\widehat{\mathcal Q}_C(u)\) for the realized source criterion indexed by split
+action \(u\), and select the class optimum
+\[
+\widehat u_g(C)=\arg\max_{u\in\mathcal A_g(C)}
+\widehat{\mathcal Q}_C(u)
+\]
+using a fixed deterministic tie rule. Write
+\(\widehat v_g(C)=\widehat{\mathcal Q}_C\{\widehat u_g(C)\}\), let
+\(G_C=|\mathcal G(C)|\), and let \(g_j(C)\) denote the active class with the
+\(j\)th largest realized score. A fixed
+representation-independent class order breaks ties, so
+\[
+\widehat v_{g_1(C)}(C)\ge\cdots\ge
+\widehat v_{g_{G_C}(C)}(C).
+\]
+For a general candidate-count rule, let \(\nu_M(q)=\Prb(Q_M=q)\) on
+\(\{1,\ldots,M\}\). Conditional on \(Q_M=q\), sample \(q\) columns uniformly
+without replacement. For the class ranking defined above,
+define cumulative multiplicity by
+\[
+M_{j,C}^{\rm cum}
+=\sum_{\ell=1}^jr_{g_\ell(C)},\qquad
+M_{0,C}^{\rm cum}=0.
+\]
+Conditional on the realized node state and this score order, the probability
+that active class \(g_j(C)\), \(j=1,\ldots,G_C\), is chosen for the split is
+\begin{equation}\label{eq:winner-fixed}
+w_{j,C}(\bm r;q)
+=
+\frac{
+\binom{M-M_{j-1,C}^{\rm cum}}q-
+\binom{M-M_{j,C}^{\rm cum}}q
+}{\binom Mq},
+\end{equation}
+where \(\binom aq=0\) for \(a<q\). Under candidate-count law \(\nu_M\),
+\begin{equation}\label{eq:winner-random}
+w_{j,C}(\bm r;\nu_M)
+=\sum_{q=1}^M\nu_M(q)w_{j,C}(\bm r;q),
+\end{equation}
+and class \(g\) is available with probability
+\begin{equation}\label{eq:availability-random}
+\omega_g(\bm r;\nu_M)
+=\sum_{q=1}^M\nu_M(q)
+\left\{1-\frac{\binom{M-r_g}q}{\binom Mq}\right\}.
+\end{equation}
+The winner probabilities need not sum to one when a candidate draw contains
+only inactive classes. The remaining mass is the probability that the node has
+no admissible sampled action.
+
+Set
+\begin{equation*}
+\omega_n=\frac{\E Q_{M_n}}{M_n},
+\qquad \mathcal I_n=H_n\omega_n.
+\end{equation*}
+Call \(\omega_n\) the singleton's per-node inclusion probability and
+\(\mathcal I_n\) its cumulative-inclusion index.
+For \(h\in\{1,2\}\), write \(\bar h=3-h\). In this design, success at a reached
+node means that the chosen split uses singleton \(X_{\bar h}\). It is a property
+of the node transition and does not depend on which evaluation point later
+traverses the node. Conditional on the training state, construct a full
+potential failure tree \(\mathcal T_{h,n}^0\) recursively. At each node, draw the
+source transition from its regular conditional law given that the chosen split
+does not use \(X_{\bar h}\), and generate both children with independent
+node-address randomizers. Null conditional branches are absorbing. The
+evaluation point \(X\sim P_X\) is drawn independently after this tree is built
+and routed through it. This construction realizes the failure kernels in
+Section~\ref{sec:framework} while retaining the original \(M_n\)-column
+candidate law, stopping rule, and competing actions. No column is deleted.
+Let \(J_{h,n}^0(x)\) be the number of internal nodes on the resulting path to
+the terminal leaf. Let \(\rho_{h,n,t}^0(x)\) be the history-conditional hazard
+that the singleton is selected and resolved at internal node \(t\), and set
+\begin{equation*}
+\Lambda_{h,n}^0(x)=\sum_{t=1}^{J_{h,n}^0(x)}\rho_{h,n,t}^0(x).
+\end{equation*}
+The leading index \(h\) identifies representation \(R_{h,n}\), while the
+unresolved component is \(\bar h\). In the abstract notation,
+\(S_{\bar h,n,t}^{R_{h,n}}(x)=1\) exactly when the chosen split uses
+\(X_{\bar h}\), and
+\[
+J_{h,n}^0=J_{\bar h,n}^{R_{h,n},0},\qquad
+\rho_{h,n,t}^0=\rho_{\bar h,n,t}^{R_{h,n},0},\qquad
+\Lambda_{h,n}^0=\Lambda_{\bar h,n}^{R_{h,n}}.
+\]
+Appendix~\ref{app:proofs} establishes threshold localization.
+
+The counterfactual path evolves under repeated singleton failure and need not
+coincide with an observed tree path. The index \(\mathcal I_n=H_n\omega_n\) combines its
+two relevant scales. The path contains order-\(H_n\) split nodes, and the
+singleton enters each candidate set with probability \(\omega_n\). Split
+competition determines whether candidate inclusion resolves it. The proof establishes
+the source-score transfer, honest reduction, depth bounds, and hazard
+approximation. The intermediate formula additionally requires normalized path
+depth to converge.
+
+For a fixed \(a\in\mathcal C_a\) and a sequence with
+\(\mathcal I_n\to\kappa\in(0,\infty)\), the intermediate regime additionally
+requires the pointwise depth condition under the joint law \(\Prb_a^0\) of the
+training sample, the full failure tree, and an independent \(X\sim P_X\) routed
+through that tree,
+\begin{equation}\label{eq:intermediate-depth}
+\frac{J_{h,n}^0(X)}{H_n}\xrightarrow[\Prb_a^0]{p}d_h(a)\in(0,\infty),
+\qquad h=1,2,
+\end{equation}
+and we write \(\zeta_h(a)=\exp\{-\kappa d_h(a)\}\).
+
+\begin{theorem}[Limits of causal-forest predictions]\label{thm:adaptive}
+Under Assumption~\ref{ass:source-regularity}, the following two endpoint results
+hold uniformly over \(a\in\mathcal C_a\). If \(\mathcal I_n\to0\), then
+\begin{equation}\label{eq:signed-selection-targets}
+\max_{h\in\{1,2\}}
+\|\widehat T_{h,n}-a_hs_h\|_{L^1(P_X)}
+\longrightarrow_p0.
+\end{equation}
+If \(\mathcal I_n\to\infty\), then
+\begin{equation}\label{eq:signed-recovery-target}
+\max_{h\in\{1,2\}}
+\|\widehat T_{h,n}-\tau_a\|_{L^1(P_X)}
+\longrightarrow_p0.
+\end{equation}
+For any fixed \(a\in\mathcal C_a\), if
+\(\mathcal I_n\to\kappa\in(0,\infty)\) and
+\eqref{eq:intermediate-depth} holds under \(\Prb_a^0\), then
+\begin{align}
+\widehat T_{1,n}
+&\longrightarrow_p
+T_{1,\kappa}
+=a_1s_1+\{1-\zeta_1(a)\}a_2s_2,
+\label{eq:intermediate-target-one}\\
+\widehat T_{2,n}
+&\longrightarrow_p
+T_{2,\kappa}
+=\{1-\zeta_2(a)\}a_1s_1+a_2s_2
+\label{eq:intermediate-target-two}
+\end{align}
+in \(L^1(P_X)\).
+\end{theorem}
+
+The product \(H_n\omega_n\) gives the expected order of singleton appearances
+along the path. If it tends to zero, the singleton usually never enters the
+search and its component drops out. If it diverges, the singleton is offered
+often enough for recovery. At an interior limit, the depth condition
+\eqref{eq:intermediate-depth} determines the remaining attenuation. The two
+endpoint results hold without this additional condition. Across all three cases,
+the representations differ only in how candidate access is allocated among
+equivalent columns.
+
+For a treatment rule \(\pi\), define
+\[
+V_a(\pi)=\E\{\tau_a(X)\pi(X)\},
+\qquad
+\operatorname{Reg}_a(\pi)=V_a(\pi_a^*)-V_a(\pi).
+\]
+The regret identity
+\begin{equation}\label{eq:unconstrained-regret-identity}
+\operatorname{Reg}_a(\pi)
+=\E\!\left[|\tau_a(X)|
+\one\{\pi(X)\ne\pi_a^*(X)\}\right]
+\end{equation}
+shows that a wrong sign is a treatment mistake weighted by its causal margin.
+
+\begin{corollary}[Sign reversal and policy regret]\label{cor:sign-policy}
+Under the conditions of Theorem~\ref{thm:adaptive}, if
+\(\mathcal I_n\to0\), then
+\begin{equation}\label{eq:population-sign-reversal}
+\left|
+\Prb_X\{\widehat T_{1,n}(X)\widehat T_{2,n}(X)<0\}
+-\frac12
+\right|\longrightarrow_p0,
+\end{equation}
+and the reversal is separated from zero.
+\begin{equation}\label{eq:strong-population-sign-reversal}
+\Prb_X\left\{
+\begin{array}{c}
+\widehat T_{1,n}(X)\widehat T_{2,n}(X)<0,\\
+\min(|\widehat T_{1,n}(X)|,|\widehat T_{2,n}(X)|)
+\ge\underline a/2,\\
+|\tau_a(X)|\ge\Delta_a
+\end{array}
+\right\}
+\longrightarrow_p\frac12.
+\end{equation}
+Moreover,
+\begin{align}
+\operatorname{Reg}_a(\widehat\pi_{2,n})&\longrightarrow_p0,
+\label{eq:oracle-sign-policy}\\
+\left|
+\operatorname{Reg}_a(\widehat\pi_{1,n})
+-\frac{a_2-a_1}{2}
+\right|&\longrightarrow_p0.
+\label{eq:sign-policy-regret}
+\end{align}
+\end{corollary}
+
+Because \(a_2>a_1\), the representation that repeats \(X_2\) yields the
+optimal unconstrained rule in this regime. Repeating \(X_1\) instead produces
+limiting regret \((a_2-a_1)/2\). The corollary concerns unconstrained treatment
+assignment. With a capacity constraint, selection depends on ranks around an
+endogenous cutoff. Section~\ref{sec:evidence} examines the sensitivity of such
+a ranking.
+
+\subsection{Finite-dimensional extension}
+
+For a fixed \(G\ge2\), let
+\[
+X=(X_1,\ldots,X_G)\sim\operatorname{Unif}([0,1]^G),
+\qquad s_g=2\one\{X_g\ge1/2\}-1.
+\]
+Define
+\begin{equation}\label{eq:finite-g-coefficients}
+\mathcal C_G=
+\left\{
+a\in[\underline a_G,\overline a_G]^G:
+\min_{g\ne h}|a_g^2-a_h^2|\ge\Delta_G
+\right\},
+\qquad
+\tau_a^{(G)}=\sum_{g=1}^Ga_gs_g,
+\end{equation}
+where \(0<\underline a_G<\overline a_G<\infty\) and
+\(0<\Delta_G<(\overline a_G^2-\underline a_G^2)/(G-1)\), so
+\(\mathcal C_G\) has nonempty interior.
+For each \(g\), let \(R_{g,n}^{(G)}\) contain \(c_n\ge1\) deterministic strictly
+increasing recodings of \(X_g\), including the identity, and one copy of every
+\(X_h\), \(h\ne g\). Then
+\(M_{G,n}=c_n+G-1\), and every representation generates \(\sigma(X)\). The
+corresponding per-node inclusion probability and cumulative-inclusion index
+are
+\begin{equation*}
+\omega_{G,n}=\frac{\E Q_{M_{G,n}}}{M_{G,n}},
+\qquad \mathcal I_{G,n}=H_n\omega_{G,n}.
+\end{equation*}
+Run the same source learner and bounded randomized model with target
+\(\tau_a^{(G)}\), under the corresponding fixed-\(G\) version of
+Assumption~\ref{ass:source-regularity}. Write \(\widehat T_{g,n}^{(G)}\) and
+\(\check T_{g,n}^{(G)}\) for the resulting prediction and linear comparator.
+
+\begin{proposition}[Fixed-dimensional component selection]\label{prop:finite-g}
+Uniformly over \(a\in\mathcal C_G\),
+\begin{align}
+\mathcal I_{G,n}\to0
+&\Longrightarrow
+\max_{1\le g\le G}
+\|\widehat T_{g,n}^{(G)}-a_gs_g\|_{L^1(P_X)}\longrightarrow_p0,
+\label{eq:finite-g-selection}\\
+\mathcal I_{G,n}\to\infty
+&\Longrightarrow
+\max_{1\le g\le G}
+\|\widehat T_{g,n}^{(G)}-\tau_a^{(G)}\|_{L^1(P_X)}\longrightarrow_p0.
+\label{eq:finite-g-recovery}
+\end{align}
+For every \(g\ne h\), the first regime also gives
+\begin{equation}\label{eq:finite-g-pair-sign}
+\left|
+\Prb_X\{\widehat T_{g,n}^{(G)}(X)\widehat T_{h,n}^{(G)}(X)<0\}-\frac12
+\right|\longrightarrow_p0.
+\end{equation}
+\end{proposition}
+
+Proposition~\ref{prop:finite-g} extends the mechanism from two effect modifiers
+to any fixed number. When cumulative singleton inclusion vanishes, the
+representation that repeats \(X_g\) selects the single component
+\(a_gs_g\). The \(G\) information-equivalent representations can therefore
+converge to \(G\) different component targets, and any pair disagrees in sign
+on half the covariate space. When cumulative inclusion diverges, every
+representation recovers the full target \(\tau_a^{(G)}\). The proposition keeps
+\(G\) fixed and does not cover a growing number of effect components.
+
+\begin{corollary}[Multiplicity boundary]\label{cor:critical-multiplicity}
+Under Assumption~\ref{ass:source-regularity}, for the source learner above, if
+\(M_n\to\infty\) and \(\xi_{M_n}\equiv\xi\) for a fixed \(\xi>0\), then
+\begin{equation}\label{eq:fixed-mtry-boundary}
+\omega_n\sim\frac{\xi+e^{-\xi}}{M_n},
+\end{equation}
+so the critical multiplicity is \(M_n\asymp H_n\). Under package-default
+\texttt{mtry} scaling
+\begin{equation}\label{eq:default-mtry}
+\xi_M=\min\{\lceil\sqrt M\rceil+20,M\},
+\end{equation}
+\(\omega_n\sim M_n^{-1/2}\), and the critical multiplicity is
+\(M_n\asymp H_n^2\). Consequently,
+\begin{equation}\label{eq:default-phase}
+\frac{M_n}{H_n^2}\to\infty
+\Longrightarrow \mathcal I_n\to0,
+\qquad
+\frac{M_n}{H_n^2}\to0
+\Longrightarrow \mathcal I_n\to\infty.
+\end{equation}
+The same boundaries hold with \(M_{G,n}\) and \(\mathcal I_{G,n}\). Under
+fixed \texttt{mtry}, \(M_{G,n}\asymp H_n\), whereas under
+\eqref{eq:default-mtry}, \(M_{G,n}\asymp H_n^2\).
+Every fixed finite representation is in the recovery regime.
+\end{corollary}
+
+Corollary~\ref{cor:critical-multiplicity} translates resolution intensity into
+a comparison between path depth and raw dimension. With fixed \texttt{mtry},
+a singleton enters a node's candidate set with probability of order
+\(M_n^{-1}\), giving order \(H_n/M_n\) inclusions along a target path. Under
+package-default scaling, this count is of order \(H_n/\sqrt{M_n}\). Above the
+corresponding multiplicity scale, the singleton is unlikely to enter a candidate
+set before the leaf is reached. Below that scale, repeated inclusion permits
+recovery.
+
+The phrase package default refers only to the \texttt{mtry} rule in
+\eqref{eq:default-mtry}. The production sequence in
+\eqref{eq:production-rates} continues to require \(k_n\to\infty\) and therefore
+differs from repeated fits that hold the package's finite-sample node-size
+setting fixed.
+
+These boundaries compare sequences of representations as the sample size
+grows. Equation~\eqref{eq:population-sign-reversal} concerns the
+infinite-forest target. Finite-ensemble simulation noise is separate. In
+particular, \eqref{eq:default-phase} cannot produce inconsistent limits from
+two fixed finite representations.
+
+\section{Finite-Array Class Sampling}\label{sec:quotient}
+
+Ordinary \texttt{grf} samples raw columns. This section defines a new learner
+that samples certified split classes. Group-first sampling also appears in
+module-guided forests, where correlation networks define the groups
+\citep{chen2013module}. Here, high correlation is insufficient because two
+variables may encode different economic states. The correction begins with a
+declared finite array
+\[
+\mathcal X_{\rm cert}=\{x_1,\ldots,x_N\}
+\]
+that contains every point used for splitting, nuisance fitting, prediction,
+variance estimation, and policy ranking. The array is complete, with no
+missing covariate entries. A column's certificate is its weak ordering of
+\(\mathcal X_{\rm cert}\), identified with the reversed ordering. Equal
+certificates generate the same unordered threshold bipartitions on every subset
+of \(\mathcal X_{\rm cert}\), and the certificates can be computed before the
+forest is grown.
+
+Let \(K\) denote the number of certified classes. The class-sampled forest has
+three steps. First, compute each column's integer
+weak-rank vector, retain the lexicographically smaller of its forward and
+reverse strings, and map every class to a canonical rank column. The
+implementation uses exact certificate comparison in place of a probabilistic
+hash. Second, draw \(\widetilde Q_K\) classes uniformly without replacement
+and evaluate each distinct action once, where
+\(\widetilde\nu_K(q)=\Prb(\widetilde Q_K=q)\) for \(q=1,\ldots,K\). Third,
+index child
+orientation, ties, and random numbers by the ordered certificate. These
+operations make the certified split class the unit of randomization. Class
+reduction occurs before the candidate draw, so candidates are sampled from
+\(K\) classes. Deleting duplicate actions afterward would retain the ordinary
+column-sampling probabilities.
+
+For an active certified class \(g\in\mathcal G(C)\), let
+\(h_g(C)\) be the
+number of active certified classes ranked ahead of \(g\) by the score and
+fixed tie rule. A sampled inactive class contributes no admissible action and
+does not block an active class. The class-level winning probability is
+\begin{equation}\label{eq:quotient-hazard}
+\widetilde p_g(C)
+=\sum_{q=1}^K\widetilde\nu_K(q)
+\frac{\binom{K-h_g(C)}q-\binom{K-h_g(C)-1}q}{\binom Kq}.
+\end{equation}
+
+For example, a raw variable, its logarithm, and a reversed unit conversion have
+one certificate whenever they induce the same weak ordering and tie blocks on
+the declared array. The class-sampled forest represents that certificate once
+and samples from the reduced class matrix.
+
+Fix \(\mathcal X_{\rm cert}\), the certification rule, and the class-level
+candidate-count law \(\widetilde\nu_K\). Replace the raw array by its canonical
+class matrix before fitting. The coupled learners receive the same outcomes,
+treatments, weights, cluster and unit identifiers, policy capacity, and tie
+keys. They also use the same class-indexed folds, tree randomizers, variance
+groups, and policy-ranking randomizers. Every downstream operation is assumed
+to be a measurable function of these common inputs.
+
+\begin{proposition}[Class-sampled forest]\label{prop:quotient}
+Under the common class-level coupling just described, any operation preserving the certified class
+set and its canonical routing leaves the restriction of every tree partition to
+\(\mathcal X_{\rm cert}\), every forest weight,
+prediction, reported standard error, and selected set on
+\(\mathcal X_{\rm cert}\) unchanged. This includes permutation, insertion or deletion
+within a represented class, complementation, and recoding that preserves or
+reverses the observed weak order and ties. Winning
+probabilities are given by \eqref{eq:quotient-hazard} and do not depend on raw
+within-class multiplicities.
+\end{proposition}
+
+Equality of weak sample orderings certifies threshold partitions on a fixed
+finite array. If \(\mathcal X_{\rm cert}\) includes the evaluation points, the
+predictions and policy-selected sets are exactly invariant there.
+The implementation maps each class to a canonical weak-rank coordinate and
+orders classes by certificate before calling the forest engine. Only exact
+weak-order classes are combined. Correlated variables with different orderings
+remain separate, and the certification supplies no guarantee at undeclared
+points.
+Under a common seed, two certified representations pass identical ordered
+class matrices and the same candidate-count parameter to the engine. The zero
+differences reported below verify this algorithmic equality. Predictive accuracy
+and the validity of reported variance estimates remain separate questions.
+In the empirical checks, \(\widetilde Q_K\) uses the capped-Poisson rule in
+\eqref{eq:grf-q}, with the same numerical \texttt{mtry} mean as the corresponding
+baseline fit and with the draw capped at \(K\).
+
+\section{Finite-Sample Evidence}\label{sec:evidence}
+
+\subsection{Monte Carlo}
+
+The Monte Carlo measures whether equivalent representations imply opposite
+treatment rules for the same individual and compares those disagreements with
+ordinary seed variation. The theorem uses strictly increasing recodings,
+bounded outcomes, and asymptotic learner sequences. The experiment also uses
+order-reversing and rank recodings with Gaussian outcomes in finite samples. Draw
+\(X\sim\operatorname{Unif}([0,1]^p)\) for \(p\ge6\),
+\(W\sim\operatorname{Bernoulli}(1/2)\),
+and let \(s_j=2\one\{X_j>1/2\}-1\). The treatment effect and outcome are
+\begin{align*}
+\tau(X)&=0.20+0.65s_1-0.55s_2+0.10(X_3-0.5),
+\\
+Y&=1+X_4+0.5X_5^2-0.5X_6+W\tau(X)+\varepsilon,
+\qquad \varepsilon\sim N(0,1).
+\end{align*}
+The remaining \(p-6\) coordinates are independent noise covariates.
+For \(j\in\{1,2\}\), representation \(R^{(j)}_\ell\) contains \(X\) and \(\ell\)
+added order-preserving or order-reversing encodings of \(X_j\). The library
+contains changes of units, complements, logs, ranks, powers, and smooth
+monotone maps. The replication README records the ordered library. On the
+pooled training-and-evaluation array,
+\(R^{(1)}_\ell\) and \(R^{(2)}_\ell\) generate the same information and the same
+distinct threshold partitions. They differ only in which effect modifier has
+more column labels in candidate sampling. None of these added encodings is
+numerically identical to its source column.
+Pooling is used only to construct the covariate recodings consistently on this
+finite array. Because every map is strictly monotone or order reversing on its
+source column, it preserves all distinct finite-array thresholds. The
+construction concerns only this observed array. Future observations require a
+separately specified preprocessing rule.
+
+For evaluation observation \(i\), let
+\(\widehat\tau_{j,\ell,i}=\widehat\tau_{j,\ell}(X_i)\) be the prediction under
+\(R_\ell^{(j)}\), and write
+\(\E_n h_i=N_{\rm eval}^{-1}\sum_{i=1}^{N_{\rm eval}}h_i\). The implied
+unconstrained rule is
+\(\widehat\pi_{j,\ell}(X_i)=\one\{\widehat\tau_{j,\ell,i}>0\}\). We report
+three paired disagreement rates. Each compares instability between the two
+representations. The experiment does not estimate bias, mean squared error, or
+policy value.
+\begin{align*}
+\mathrm{SR}_0
+&=\E_n\one\{\widehat\tau_{1,\ell,i}\widehat\tau_{2,\ell,i}<0\},\\
+\mathrm{SR}_{0.10}
+&=\E_n\one\{\widehat\tau_{1,\ell,i}\widehat\tau_{2,\ell,i}<0,
+\min(|\widehat\tau_{1,\ell,i}|,|\widehat\tau_{2,\ell,i}|)\ge0.10\},\\
+\mathrm{SR}_{\tau,0.25}
+&=\frac{\E_n\one\{\widehat\tau_{1,\ell,i}\widehat\tau_{2,\ell,i}<0,
+|\tau(X_i)|\ge0.25\}}
+{\E_n\one\{|\tau(X_i)|\ge0.25\}}.
+\end{align*}
+Every cell averages twenty independently generated training samples of size
+3,000, each paired with an independent evaluation sample of size 30,000.
+Forests use \texttt{grf} 2.4.0, 2,000 trees, oracle nuisance functions, and
+common data and forest seeds across representations. Each replication is
+therefore paired across representations. Their different column counts prevent
+a common seed from aligning every internal random-number stream.
+
+\begin{table}[t]
+\caption{Estimated-CATE sign disagreement under equivalent representations}
+\label{tab:sign-reversal}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Comparison & Raw dim. & \(\mathrm{SR}_0\) (\%) & \(\mathrm{SR}_{0.10}\) (\%) & \(\mathrm{SR}_{\tau,0.25}\) (\%)\\
+\midrule
+\multicolumn{5}{@{}l}{\textit{Panel A: package-default search, \(\ell=8\)}}\\
+\(p=40\)  &  48 &  6.83 (1.24) &  0.02 (0.01) &  0.40 (0.15)\\
+\(p=100\) & 108 & 21.86 (1.30) & 10.57 (1.82) &  2.50 (0.75)\\
+\(p=250\) & 258 & 37.23 (1.98) & 25.96 (1.51) & 17.26 (2.77)\\
+\(p=500\) & 508 & 46.22 (0.99) & 31.37 (2.10) & 28.99 (1.33)\\
+\addlinespace
+\multicolumn{5}{@{}l}{\textit{Panel B: fixed Poisson mean, \(p=40\), \texttt{mtry}=6}}\\
+\(\ell=1\)  & 41 & 17.69 (1.42) &  4.00 (0.85) &  1.06 (0.33)\\
+\(\ell=2\)  & 42 & 24.50 (1.15) & 13.38 (1.64) &  3.72 (1.50)\\
+\(\ell=4\)  & 44 & 30.06 (1.59) & 21.00 (1.02) &  8.56 (2.17)\\
+\(\ell=8\)  & 48 & 35.54 (1.79) & 25.54 (1.25) & 15.28 (2.41)\\
+\(\ell=16\) & 56 & 41.33 (1.65) & 29.50 (1.58) & 22.76 (2.20)\\
+\addlinespace
+\multicolumn{5}{@{}l}{\textit{Panel C: diagnostics at \(p=500\), \(\ell=8\), package default}}\\
+Representation change & 508 & 46.10 (0.98) & 31.39 (2.10) & 28.83 (1.32)\\
+Second forest seed     & 508 &  0.09 (0.02) &  0.00 (0.00) &  0.02 (0.00)\\
+Class-sampled forest   & 508 &  0.00 (0.00) &  0.00 (0.00) &  0.00 (0.00)\\
+\bottomrule
+\end{tabular}
+
+\legend{Entries are Monte Carlo means with standard errors across twenty
+replications in parentheses. \(\mathrm{SR}_0\) is the share of evaluation observations
+with opposite-signed paired predictions. \(\mathrm{SR}_{0.10}\) additionally requires
+both predictions to have absolute magnitude at least 0.10.
+\(\mathrm{SR}_{\tau,0.25}\) conditions on an absolute true treatment effect of at least
+0.25. Here \(\ell\) is the number of added encodings, so the enriched split
+class contains \(\ell+1\) raw columns and total raw dimension is \(p+\ell\). Panel C
+is an independent benchmark using the design in the last row of Panel A. The
+second-seed row changes only the forest seed of \(R^{(1)}_8\). The class-sampled
+row compares the representations after quotienting certified split classes.
+Each entry compares \(R_\ell^{(1)}\) with \(R_\ell^{(2)}\), not either enriched
+representation with the raw baseline.}
+\end{table}
+
+Panel A uses the package-default search budget. With eight added encodings,
+overall sign disagreement rises from 6.83
+percent at baseline dimension 40 to 46.22 percent at dimension 500. At the low
+dimension, nearly all reversals occur close to zero. At dimension 500, 31.37
+percent of predictions disagree after both estimates are required to
+exceed 0.10 in absolute value, and 28.99 percent disagree among observations
+with \(|\tau(X)|\ge0.25\). At high dimension, the discrepancy is no longer
+confined to predictions near zero.
+
+Panel B holds the baseline dimension and the \texttt{mtry} Poisson mean fixed,
+which isolates the role of multiplicity. Raising the number of added encodings
+from one to
+sixteen increases overall sign disagreement from 17.69 to 41.33 percent and
+\(\mathrm{SR}_{0.10}\) from 4.00 to 29.50 percent. This increase is the
+finite-sample counterpart of the singleton's declining inclusion probability as
+the repeated class grows.
+
+Panel C separates representation dependence from ordinary forest randomness.
+At \(p=500\), changing the representation produces 46.10 percent sign
+disagreement. Changing only the seed produces 0.09 percent. The corresponding
+95 percent \(t_{19}\) intervals for the Monte Carlo mean across twenty
+replications are [44.05, 48.15] and [0.051, 0.120]
+percent. The tree-count rows of Table~\ref{tab:computational-audits} are also
+stable between 800 and 5,000 trees. Quotienting the certified split classes
+reduces every paired discrepancy to zero. In this design, the effect of the
+representation is much larger than seed variation and remains after additional
+tree averaging. The exercise quantifies the effect for this design. Its
+frequency in applied work remains unknown.
+
+\FloatBarrier
+\subsection{Cash-transfer ranking sensitivity}
+
+The Kenya exercise asks how a hypothetical top-half ranking changes when
+baseline covariates are recoded without changing their information. I fit the
+forests in sample and rank households using out-of-bag predictions. Because the
+experimental design includes saturation and interference, I interpret the
+switching rates only as descriptive measures of ranking sensitivity. The data are the
+public household files from the randomized cash-transfer experiment in Kenya
+analyzed by Egger et al.\ \citeyearpar{egger2022}. The outcome is endline
+per-capita consumption, treatment is the randomized transfer indicator, and
+the sample contains 4,765 eligible households with baseline data in 653
+villages. Sixteen baseline predictors describe
+household composition, labor-market status, land and livestock ownership,
+durable ownership, meals, and protein meals.
+
+The outcome is the released winsorized PPP measure of per-capita consumption.
+Continuous baseline variables are median-imputed and indicator variables are
+zero-imputed. A weighted regression forest supplies the common outcome
+nuisance estimate, and the weighted treatment mean supplies the propensity
+nuisance. The replication README lists the exact predictors and
+recodings.
+
+Every fit uses \texttt{grf} version 2.4.0, 2,000 trees, village clusters,
+survey weights, a common outcome nuisance estimate, the same seed, and
+\(\texttt{mtry}=16\). In this implementation, \texttt{mtry} is the mean
+\(\xi_M\) of the uncapped Poisson draw \(N_M\) in \eqref{eq:grf-q}. The source
+then clamps that draw to obtain the candidate count \(Q_M\). Holding this mean
+fixed isolates representation multiplicity and differs from recomputing the
+package default after each augmentation. I rank households by their out-of-bag
+causal-forest treatment-effect scores and select the top half, with household
+identifiers breaking numerical ties. Let \(S_0\) be the selected set under the
+canonical representation and \(S_R\) the selected set under recoding \(R\). The
+reported switching rate is
+\begin{equation}\label{eq:kenya-switch}
+\operatorname{Switch}(R)
+=\frac{1}{N}\sum_{i=1}^N
+\left|\mathbf 1\{i\in S_R\}-\mathbf 1\{i\in S_0\}\right|
+=\frac{|S_R\mathbin{\triangle}S_0|}{N}.
+\end{equation}
+It is the fraction of households whose selected status changes and counts both
+exits and entries. Each set contains exactly \(\lfloor N/2\rfloor\) households.
+
+\begin{table}[t]
+\caption{Representation sensitivity in the cash-transfer data}
+\label{tab:real}
+\centering
+\small
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Representation & Raw columns & Spearman correlation & Selected status changed (\%)\\
+\midrule
+\multicolumn{4}{@{}l}{\textit{Panel A: seed benchmark and low-order recodings}}\\
+Different seed, maximum      & 16  & 0.9999 & 0.55\\
+Household size \(\times2\)   & 17  & 0.984  & 5.25\\
+Raw, log, and rank           & 22  & 0.978  & 6.55\\
+\addlinespace
+\multicolumn{4}{@{}l}{\textit{Panel B: concentrated multiplicity stress tests}}\\
+Household size \(\times32\)  & 47  & 0.902  & 12.76\\
+Household size \(\times128\) & 143 & 0.751  & 21.32\\
+Female head \(\times128\)    & 143 & 0.693  & 25.18\\
+Employed \(\times128\)       & 143 & 0.824  & 18.38\\
+Protein meals \(\times128\)  & 143 & 0.711  & 23.17\\
+\addlinespace
+\multicolumn{4}{@{}l}{\textit{Panel C: balanced multiplicity control}}\\
+Balanced \(\times8\)         & 128 & 0.980  & 6.67\\
+\bottomrule
+\end{tabular}
+\legend{The canonical specification has sixteen columns. All additional
+recodings in the table were constructed for this diagnostic. Spearman
+correlation and \(\operatorname{Switch}(R)\) in \eqref{eq:kenya-switch} compare
+each out-of-bag forest-score ranking with the canonical fit under seed 20260806.
+The first row reports the maximum change across three
+alternative canonical seeds. Observations, nuisances, tree count, sample
+weights, clusters, and \texttt{mtry} are held fixed. A label of
+\(\times k\) means that the named variable has \(k\) total copies. The balanced
+design gives every canonical predictor eight total copies.}
+\end{table}
+
+Table~\ref{tab:real} separates low-order recodings, concentrated stress tests,
+and a balanced-multiplicity control. Table~\ref{tab:computational-audits}
+collects the tree-count and quotient checks discussed below.
+
+Panel A shows that small, familiar recodings can matter more than the forest
+seed. A second household-size label switches 5.25 percent of top-half
+selections, and retaining raw, log, and rank versions of three ordered
+predictors switches 6.55 percent. The largest change across three alternative
+seeds is 0.55 percent.
+
+Panel B deliberately concentrates multiplicity on one predictor at a time.
+Selection switching ranges from 12.76 percent with 32 household-size copies
+to 25.18 percent with 128 copies of the female-head indicator. The
+candidate-count law quantifies the induced change in inclusion probabilities.
+In the canonical \(M=16\) representation, \(\E Q_M=14.41\) and each class is
+included with probability 0.9008. With 128 copies of household size and fifteen
+singletons, \(M=143\), the repeated class is included with probability above
+0.999999 and each singleton with probability 0.1119. These probabilities
+describe how strongly the representation changes access to split search.
+Conditional split scores then determine which included class wins.
+
+Panel C multiplies every predictor equally. This preserves relative class
+multiplicity, but a candidate set can contain several labels for the same
+class and consequently fewer distinct split actions. The 6.67 percent switch
+rate shows that balanced duplication can change search breadth even without
+favoring a particular predictor.
+
+\begin{table}[t]
+\caption{Robustness and invariance checks}
+\label{tab:computational-audits}
+\centering
+\footnotesize
+\begin{tabular}{@{}llrr@{}}
+\toprule
+Diagnostic & Raw design & Ordinary forest & Class-sampled forest\\
+\midrule
+\multicolumn{4}{@{}l}{\textit{Panel A: tree-count robustness, fixed \texttt{mtry} mean 6, \(\mathrm{SR}_{0.10}\) (\%)}}\\
+800 trees   & \(p=40,\ \ell=8\) & 25.67 (1.25) & ---\\
+5,000 trees & \(p=40,\ \ell=8\) & 25.76 (1.29) & ---\\
+\addlinespace
+\multicolumn{4}{@{}l}{\textit{Panel B: Kenya selected-status switches (\%)}}\\
+Administrative aliases & 20 columns & 6.18 & 0.00\\
+Unit recodings          & 19 columns & 5.86 & 0.00\\
+Binary complements      & 19 columns & 6.28 & 0.00\\
+Raw, log, and rank      & 22 columns & 6.53 & 0.00\\
+Combined routine bundle & 32 columns & 7.54 & 0.00\\
+\addlinespace
+\multicolumn{4}{@{}l}{\textit{Panel C: finite-array output equality}}\\
+Maximum prediction difference & 3 versus 7 columns, \(K=3\) & --- & 0\\
+Maximum standard-error difference & 3 versus 7 columns, \(K=3\) & --- & 0\\
+\bottomrule
+\end{tabular}
+\legend{Panel A reports Monte Carlo means with standard errors across twenty
+replications in parentheses with the \texttt{mtry} Poisson mean fixed at 6.
+Here \texttt{mtry} is the uncapped Poisson mean \(\xi_M\). The realized
+candidate count \(Q_M\) is capped at the raw dimension.
+Panel B reports the ordinary forest's mean
+\(\operatorname{Switch}(R)\) across three seeds and the maximum value for the
+class-sampled forest across those seeds. Panel C is a deterministic finite-array check
+with 400 training observations, 200 evaluation observations, 400 trees, a common
+seed, and \texttt{grf} 2.4.0. Entries are maximum absolute differences over the
+evaluation array. The canonical and augmented inputs have three and seven raw
+columns, respectively, and both reduce to the same three certified classes.}
+\end{table}
+
+In the Monte Carlo, \(\mathrm{SR}_{0.10}\), the share of observations with
+opposite signs and both predictions at least 0.10 in absolute value, is 25.67
+percent with 800 trees and 25.76 percent with 5,000 trees. Across the Kenya
+recoding bundles, the ordinary forest changes selected status for 5.86 to 7.54
+percent of households on average, while the class-sampled forest records zero
+changes for every bundle and seed. The finite-array check also gives identical
+predictions and reported standard errors. Increasing the tree count leaves the
+Monte Carlo sensitivity essentially unchanged. Class-level sampling eliminates
+the paired discrepancies on the certified arrays.
+
+\FloatBarrier
+
+\section{Conclusion}\label{sec:conclusion}
+
+Feature subsampling makes raw column labels part of a forest's specification.
+Two representations can contain the same covariate information and still
+assign different probabilities to the same split actions. In the signed
+\texttt{grf} design, cumulative candidate inclusion determines each effect
+component's weight in the limiting target.
+
+The inconsistent limits require multiplicity to grow with the sample. Every
+fixed finite representation covered by the theorem recovers under its
+conditions. Finite samples can nevertheless display large, well-separated
+sign changes. In the Kenya diagnostic, author-constructed preprocessing-style
+recodings change selected status for roughly 6 to 8 percent of households,
+compared with a maximum of 0.55 percent among three alternative seeds.
+
+Practitioners should treat equivalent encodings as part of the forest design
+and report sensitivity to them. The class-sampled construction gives exact
+invariance on any array where the split classes have been certified. Applying
+the same guarantee to future points requires a defensible global routing rule,
+and learning economically valid classes remains open.
+
+\section*{Data and Code Availability}
+The paper, source files, code, included outputs, and verification scripts are
+available at
+\url{https://github.com/YiNiu-bot/representation-multiplicity-causal-forests}.
+The Kenya diagnostic uses the public files accompanying Egger et al.\
+\citeyearpar{egger2022}, which are not redistributed. The repository records
+their checksums and maps each reported result to portable reproduction code
+and an included output.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\input{appendix}
+\end{document}
