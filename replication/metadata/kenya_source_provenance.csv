@@ -1,4 +1,0 @@
-original_file,sha256,relationship_to_included_outputs
-class_sampled_grf.R,e76fda4638820f848ab8acc65e17693be45979867700f2ef999426c65c4f3583,used for included Kenya class-sampling outputs
-run_class_sampled_extension.R,9667505b74b35fe91b9f369e92f71dbeb45f4be2f9463a82c518fed6d84d4169,used for included Kenya class-sampling outputs
-run_fixed_budget_study.R,8683e0c77f6accd62b7fac140f8f56c84290a00f5c6583a2770c2711ed74ead1,used for included Kenya fixed-budget outputs

@@ -1,0 +1,282 @@
+\begin{appendix}
+
+\section{Proofs}\label{app:proofs}
+
+\begin{proof}[Proof of Theorem~\ref{thm:main}]
+All probability bounds for the endpoints are uniform over \(a\in\mathcal C_a\).
+Write \(\mathcal D_n\) for the training data and the fitted nuisance functions,
+including their training randomization. Uniform boundedness, the fixed
+two-dimensional rectangle class, and relative VC Bernstein bounds give
+\[
+r_n=\sqrt{\frac{\log(B_ns_n)}{k_n}}+
+\frac{\log(B_ns_n)}{k_n}+
+\|\widehat m-m_a\|_\infty=o_p(1).
+\]
+These bounds hold simultaneously for the root splitting and estimation
+samples and all their rectangular restrictions. They therefore cover both
+ordinary and failure trees, even though the latter use conditional transition
+laws. Increasing recodings do not enlarge this rectangle class. The score
+identity and its perturbation bound are
+\[
+\E(\Gamma_i\mid X_i=x)=\tau_a(x),
+\qquad
+\max_i|\widehat\Gamma_i-\Gamma_i|
+\le2\|\widehat m-m_a\|_\infty.
+\]
+Combining the concentration bounds with \eqref{eq:transfers} yields
+\begin{equation}\label{eq:proof-criterion}
+\sup_{C,j,t}
+\left|\widehat{\mathcal Q}^{L}_C(j,t)-\mathcal Q_C(j,t)\right|
+=o_p(1),
+\end{equation}
+where \(\mathcal Q_C\) is the population score gain.
+
+First consider a node before coordinate \(j\) has been used. Its range in
+that coordinate is still \([0,1]\), and independence removes the other
+component from the split contrast. Direct calculation gives
+\begin{equation}\label{eq:proof-shape}
+\mathcal Q_C(j,t)=
+\begin{cases}
+a_j^2t/(1-t),&0<t\le1/2,\\
+a_j^2(1-t)/t,&1/2\le t<1.
+\end{cases}
+\end{equation}
+The unique maximizer is \(1/2\), with gain \(a_j^2\). Positivity of
+\(\underline a\) and the coefficient gap imply
+\(a_2^2-a_1^2\ge2\underline a\Delta_a>0\).
+At nodes with at least \(C_0k_n\) splitting observations, cuts approaching
+\(1/2\) are size-admissible and balanced on the concentration event.
+Maximization and \eqref{eq:proof-criterion} thus imply
+\begin{equation}\label{eq:proof-localization}
+\max_{j,F}|\widehat t_{j,F}-1/2|=o_p(1),
+\end{equation}
+where \(F\) ranges over first-use nodes above this size band in the ordinary
+and failure trees.
+
+The continuation condition now supplies the depth bound. It is used here
+in addition to balance. If \(n_d(x)\) is the splitting-sample size on a path,
+then, whenever a split is made,
+\[
+\beta n_d(x)\le n_{d+1}(x)\le(1-\beta)n_d(x).
+\]
+The root size is proportional to \(s_n\), no path stops above \(C_0k_n\),
+and every child has at least \(k_n\) observations. Consequently there are
+constants \(0<c_\beta<C_\beta<\infty\) and an integer \(K\), independent of
+\(n,a,h\), such that, with probability tending to one,
+\begin{equation}\label{eq:proof-depth}
+c_\beta H_n\le J_{h,n}(X),J_{h,n}^0(X)\le C_\beta H_n.
+\end{equation}
+Here \(J_{h,n}\) is the number of candidate draws on an ordinary path,
+and \(J_{h,n}^0\) is defined when \(\omega_n<1\).
+At most \(K\) draws occur after the path enters the band
+\(n_d<C_0k_n\), including a final unsuccessful search. Reached leaves have
+splitting sizes between \(k_n\) and \(C_0k_n\). Relative concentration gives
+their population masses of order \(k_n/s_n\) and honest estimation counts
+of order \(k_n\). In particular,
+\begin{equation}\label{eq:proof-leaf}
+\max_{b,L}\left|
+\frac{1}{N_{b,n}^{\rm est}(L)}
+\sum_{i\in I_{b,n}^{\rm est}:X_i\in L}\widehat\Gamma_i
+-\E\{\tau_a(X)\mid X\in L\}
+\right|=o_p(1).
+\end{equation}
+The maximum includes both representations. The counts are positive on this
+event.
+
+We next control the approximation after first use. Choose a deterministic
+\(\delta_n\downarrow0\) so that \eqref{eq:proof-localization} is at most
+\(\delta_n\) with probability tending to one. For each coordinate, its
+first-use nodes above the terminal band form an antichain. Label only their
+children by the sign suggested by the side of the cut, and retain this label
+in their descendants. The total population mass receiving a wrong label is
+\[
+\sum_F P_X(F)|\widehat t_{j,F}-1/2|\le\delta_n,
+\]
+where the sum is over these above-band first-use nodes.
+For a descendant \(C\), let \(q(C)\) be the conditional fraction with the
+wrong label. Then
+\[
+\sup_t\mathcal Q_C(j,t)\le4\overline a^2q(C),
+\qquad
+\int_C|\E(s_j\mid C)-s_j(x)|\,dP_X(x)\le4P_X(C)q(C).
+\]
+These bounds also apply after further splits. For
+\(u_n=\sqrt{\delta_n}\), select the first descendant on each path for which
+\(q(C)>u_n\). Those descendants are disjoint, so their combined mass is at
+most \(\delta_n/u_n\). Outside this vanishing set, a previously used
+coordinate has gain at most \(4\overline a^2u_n\) at every subsequent node.
+An offered unused coordinate has gain at least
+\(\underline a^2-o_p(1)\) above the terminal band and therefore wins.
+Only the root can involve competition between two unused coordinates.
+
+The repeated coordinate is offered with probability at least \(1/2\) at
+each draw. Together with \eqref{eq:proof-depth}, the preceding ordering
+argument bounds its probability of remaining unused above the terminal
+band by
+\[
+2^{-\lfloor c_\beta H_n\rfloor+K+1}+o(1)=o(1).
+\]
+For the singleton, the probability of first use only in that band is also
+\(o(1)\). If \(\omega_n\le H_n^{-1/2}\), it is at most \(K\omega_n\).
+Otherwise, avoiding an earlier use has probability at most
+\(\exp\{-\omega_n(\lfloor c_\beta H_n\rfloor-K-1)\}+o(1)\).
+The error terms here include the exceptional target mass just bounded.
+
+Let \(D_{h,n}(x)\) indicate first use of the singleton in a generic tree,
+and let \(\check T^{\rm tree}_{h,n}\) be that tree's honest score prediction.
+If \(D_{h,n}(x)=0\), its leaf has no restriction in the singleton coordinate,
+whose conditional mean is exactly zero. For a first use above the terminal
+band, localization and the wrong-label bound control the integrated
+approximation error. A late first use adds at most twice its probability to
+the integrated error for the sign component, which vanishes by the preceding
+bound.
+The same bound applies to the repeated component. Thus
+\begin{equation}\label{eq:proof-mixture}
+\E_\Theta\!\left[
+\left\|\check T^{\rm tree}_{h,n}
+-D_{h,n}\tau_a-(1-D_{h,n})a_hs_h\right\|_{L^1(P_X)}
+\middle|\mathcal D_n\right]=o_p(1).
+\end{equation}
+This is an approximation after first use, not an assertion that every leaf
+is exactly pure.
+
+Suppose now that \(\omega_n<1\). Conditional on \(Q_{M_n}=q\), the singleton
+is included with probability \(q/M_n\), so its unconditional inclusion
+probability at a node is \(\omega_n\). On the locally conditioned failure
+tree, write \(\rho_{h,n,t}^0(x)\) for the probability that the ordinary
+transition at the current node chooses the singleton as its splitting
+coordinate. It satisfies \(0\le\rho_{h,n,t}^0\le\omega_n\).
+After the root and above the terminal band, this probability equals
+\(\omega_n\) outside the exceptional paths. With
+\(\Lambda_{h,n}^0=\sum_{t\le J_{h,n}^0}\rho_{h,n,t}^0\), we obtain
+\begin{equation}\label{eq:proof-hazard}
+\left|\Lambda_{h,n}^0-J_{h,n}^0\omega_n\right|
+\le(K+1)\omega_n
+\end{equation}
+outside a set of joint training, failure-tree, and test-point probability
+tending to zero.
+
+Node locality ensures that conditioning transitions on other branches leaves
+the transition kernels on the target path unchanged. At each stage, factor
+the probability of avoiding a singleton split from
+the transition kernel conditional on that event. Multiplication along the
+path and integration over the conditional kernels give the exact identity
+\begin{equation}\label{eq:proof-survival}
+u_{h,n}(x):=\Prb_\Theta\{D_{h,n}(x)=0\mid\mathcal D_n\}
+=\E_{\Theta^0}\!\left[
+\prod_{t=1}^{J_{h,n}^0(x)}(1-\rho_{h,n,t}^0(x))
+\middle|\mathcal D_n\right].
+\end{equation}
+The kernels are well-defined because their conditioning probabilities are
+at least \(1-\omega_n>0\). This identity concerns no first use throughout
+the path, exactly the event defining \(D_{h,n}=0\).
+
+If \(\mathcal I_n\to0\), then \(\omega_n\to0\) and
+\(\Lambda_{h,n}^0\to_p0\) by \eqref{eq:proof-depth} and
+\eqref{eq:proof-hazard}. The product converges to one since its deficit is
+at most \(\Lambda_{h,n}^0\). If \(\mathcal I_n\to\infty\) and
+\(\omega_n<1\), the cumulative hazard diverges and
+\[
+\prod_t(1-\rho_{h,n,t}^0)\le e^{-\Lambda_{h,n}^0}\longrightarrow_p0.
+\]
+For indices with \(\omega_n=1\), both coordinates are always offered.
+The stronger one wins at the root and the other at the next interior node,
+outside the same exceptional set. Thus recovery also holds on these indices,
+without a failure-tree conditioning on a null event.
+
+For the intermediate case, fix \(a\in\mathcal C_a\).
+The condition \(\mathcal I_n\to\kappa\in(0,\infty)\) implies
+\(\omega_n\to0\). Equations~\eqref{eq:intermediate-depth} and
+\eqref{eq:proof-hazard} yield
+\(\Lambda_{h,n}^0\to_p\kappa d_h(a)\). Moreover,
+\[
+0\le-\log\prod_t(1-\rho_{h,n,t}^0)-\Lambda_{h,n}^0
+\le\frac{\omega_n\Lambda_{h,n}^0}{1-\omega_n}
+\longrightarrow_p0.
+\]
+The product therefore converges to \(e^{-\kappa d_h(a)}\).
+All products are bounded. Joint convergence with an independent test point
+implies convergence of \(u_{h,n}\) in \(L^1(P_X)\), in probability over
+\(\mathcal D_n\), to one, zero, or \(e^{-\kappa d_h(a)}\) in the respective
+regimes.
+
+Finally, conditional on \(\mathcal D_n\), independent tree groups of bounded
+size and bounded score predictions give
+\[
+\left\|\check T_{h,n}-
+\E_\Theta(\check T^{\rm tree}_{h,n}\mid\mathcal D_n)\right\|_{L^1(P_X)}
+=O_p(B_n^{-1/2})=o_p(1).
+\]
+Combine this with \eqref{eq:proof-mixture}, the three limits for \(u_{h,n}\),
+and the prediction transfer in \eqref{eq:transfers}. This proves
+\eqref{eq:selection-limit}, \eqref{eq:recovery-limit}, and
+\eqref{eq:intermediate-targets}.
+
+A strictly increasing recoding maps a threshold \(t\) to \(\varphi(t)\)
+and preserves \(\varphi(x)\le\varphi(t)\) exactly when \(x\le t\).
+All cells and concentration bounds above are expressed in the original
+coordinates. Their constants therefore do not depend on the number or
+form of the increasing recodings.
+\end{proof}
+
+\begin{proof}[Proof of Corollary~\ref{cor:sign}]
+In the selection regime, Markov's inequality and
+\eqref{eq:selection-limit} give, for \(g=1,2\),
+\[
+\Prb_X\{\operatorname{sgn}(\widehat T_{g,n})\ne s_g\}
+\le\frac{2}{\underline a}
+\|\widehat T_{g,n}-a_gs_g\|_{L^1(P_X)}=o_p(1).
+\]
+The independent signs \(s_1\) and \(s_2\) disagree with probability one half.
+On that event, \(|\tau_a|=a_2-a_1\ge\Delta_a\). A second application of
+Markov's inequality shows that both fitted magnitudes exceed
+\(\underline a/2\) outside a set of \(P_X\)-mass \(o_p(1)\). This proves
+\eqref{eq:sign-reversal} and the stated separation from zero.
+
+For any rule \(\pi\),
+\[
+\operatorname{Reg}_a(\pi)
+=\E\!\left[|\tau_a(X)|
+\one\{\pi(X)\ne\pi_a^*(X)\}\right].
+\]
+Since \(a_2>a_1\), \(\pi_a^*=\one\{s_2=1\}\), so the limit of
+\(\widehat\pi_{2,n}\) has zero regret. For the other representation,
+\[
+\operatorname{Reg}_a(\one\{s_1=1\})
+=\E\!\left[\tau_a
+\{\one\{s_2=1\}-\one\{s_1=1\}\}\right]
+=\frac{a_2-a_1}{2}.
+\]
+Boundedness and classification convergence transfer these values to the
+estimated rules, proving \eqref{eq:regret}.
+\end{proof}
+
+\begin{proof}[Proof of Corollary~\ref{cor:boundary}]
+The capped-Poisson rule satisfies
+\[
+\E Q_M=\xi_M+e^{-\xi_M}-\E(N_M-M)_+.
+\]
+For fixed \(\xi_M=\xi\), the final term vanishes as \(M\to\infty\), giving
+\(\omega_n\sim(\xi+e^{-\xi})/M_n\). If \(\xi_M\to\infty\) and
+\(\xi_M/M\to0\), Poisson concentration gives
+\(\E Q_M/\xi_M\to1\). Under the package default,
+\(\xi_M/\sqrt M\to1\), so \(\omega_n\sim M_n^{-1/2}\). The two boundaries
+follow by substituting these expressions into
+\(\mathcal I_n=H_n\omega_n\). For fixed finite \(M\), \(\omega_n>0\) is
+constant and \(H_n\to\infty\).
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:class}]
+Couple the two representations with the common class-indexed randomness in the
+proposition. At a common node they draw the same classes, evaluate the same
+certified actions, and apply the same scores and tie order. Equal certificates
+give identical unordered children, while canonical orientation sends every
+point in \(\mathcal X_{\rm cert}\) to the same child. Induction gives identical
+tree partitions on the certified array. Leaf observations and forest weights
+therefore coincide. Nuisance fits coincide because they are held fixed or
+computed from the same canonical matrix with common randomness. The same
+inputs, settings, and randomization then give identical stopping decisions,
+predictions, variance calculations, rankings, and policy ties.
+\end{proof}
+
+\end{appendix}

@@ -1,0 +1,8 @@
+name: auto-dml-rf-replication-r40
+channels:
+  - conda-forge
+dependencies:
+  - r-base=4.0.5
+  - r-randomforest=4.6_14
+  - r-nnet=7.3_16
+

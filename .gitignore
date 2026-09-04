@@ -14,4 +14,6 @@ __pycache__/
 *.synctex.gz
 rerun_outputs/
 paper/source/main.pdf
-replication/data/kenya/*.dta
+*.rds
+*.RDS
+*.zip

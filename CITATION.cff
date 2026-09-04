@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-message: "Please cite the paper and identify the repository version used."
+message: "Please cite the paper and identify the repository commit used."
 title: "Representation Multiplicity in Causal Forests: Code and Replication Materials"
 type: software
 authors:
@@ -7,8 +7,8 @@ authors:
     given-names: Yi
     email: n1y1@sas.upenn.edu
     affiliation: University of Pennsylvania
-version: 1.0.0
-date-released: 2026-08-19
+version: 2.0.0
+date-released: 2026-09-03
 repository-code: "https://github.com/YiNiu-bot/representation-multiplicity-causal-forests"
 url: "https://github.com/YiNiu-bot/representation-multiplicity-causal-forests"
 preferred-citation:

@@ -1,64 +1,46 @@
 # Representation Multiplicity in Causal Forests
 
-This repository contains the paper, source files, numerical outputs,
-and replication code for **Representation Multiplicity in Causal Forests**.
+Paper and replication materials for Yi Niu, *Representation Multiplicity in
+Causal Forests*. This version includes the 100-replication Monte Carlo,
+CATE error and treatment-rule regret, and six Auto-DML empirical comparisons
+using both native values and controlled canonical ranks.
 
-- [Paper PDF](paper/representation_multiplicity_causal_forests.pdf)
+- [Paper](paper/representation_multiplicity_causal_forests.pdf)
 - [LaTeX source](paper/source/main.tex)
-- [Replication guide](replication/README.md)
-- [`grf` 2.4.0 source audit](docs/grf_v2.4.0_source_audit.md)
+- [Replication instructions](replication/README.md)
+- [Empirical protocol and retained columns](replication/EMPIRICAL.md)
 
-## Main result
+## Verify the included results
 
-Feature-subsampled forests sample covariate columns rather than economic
-information. Retaining several split-equivalent encodings can therefore change
-which split actions are available. The paper characterizes the resulting
-causal-forest targets, gives a signed example with representation-dependent
-limits, and studies a class-sampled correction on a declared finite array.
-
-The numerical exercises establish sensitivity in the stated designs. They do
-not estimate how often the problem occurs in applied work, and the Kenya
-ranking exercise is not a welfare analysis.
-
-## Verify the repository
-
-The fast verifier requires Python 3 and Node.js. It checks every versioned file,
-reconstructs Tables I--III from replication-level CSVs, and runs the
-deterministic proof and implementation checks.
+From the repository root, with Python 3.10 or later:
 
 ```sh
-./scripts/verify_release.sh
+python3 scripts/verify_replication.py
 ```
 
-The R smoke tests additionally require R 4.3.3 and `grf` 2.4.0:
+The command checks file integrity, reconstructs all four tables from
+replication-level outputs, and checks paired comparisons and certificates.
+It does not refit forests or certify the proofs. Full refit commands and
+software requirements are in the replication instructions.
 
-```sh
-export RI_RLIB="$PWD/.r-library"
-Rscript scripts/install_r_dependencies.R
-./scripts/smoke_test.sh
-```
+## Findings
 
-The included Monte Carlo outputs were regenerated with the public code. Full
-Monte Carlo and Kenya reruns remain separate because they are substantially
-more expensive and the Kenya microdata are not redistributed. See the
-[replication guide](replication/README.md) for exact commands.
+Under the stated continuation and score-transfer conditions, the paper
+characterizes representation-specific probability limits of sample-grown
+honest forests. An additional failure-path depth condition gives the
+intermediate attenuation formula. The CATE itself is unchanged.
 
-## Repository layout
+Class sampling makes certified representations yield identical predictions.
+In the reported Monte Carlo it reduces treatment-rule regret but increases
+CATE mean squared error. The empirical aggregate ATET conclusions remain
+stable, although individual first-stage contrasts change. Canonical-rank
+comparisons remove nonlinear midpoint routing as an explanation, without
+identifying every implementation effect or demonstrating empirical accuracy
+gains.
 
-```text
-paper/          PDF and journal-neutral LaTeX source
-replication/    Code, included outputs, data instructions, and metadata
-scripts/        Build, verification, and reproduction entry points
-docs/           Source audit for the implementation-specific theorem
-```
+Older versions remain in Git history. The current tree contains only the
+current paper and its replication materials. Original third-party data and
+replication programs must be obtained from their distributors.
 
-The raw Kenya microdata are not redistributed. Acquisition instructions and
-input checksums are provided in [`replication/data/README.md`](replication/data/README.md).
-
-## Citation and rights
-
-Citation metadata are in [`CITATION.cff`](CITATION.cff). Author-written code is
-released under the MIT License in [`LICENSE-CODE`](LICENSE-CODE). The paper,
-documentation, included results, and third-party inputs have separate rights
-described in [`RIGHTS.md`](RIGHTS.md) and
-[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+See [rights](RIGHTS.md), [third-party notices](THIRD_PARTY_NOTICES.md), and
+[citation metadata](CITATION.cff).

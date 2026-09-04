@@ -1,0 +1,21 @@
+R version 4.0.5 (2021-03-31)
+Platform: aarch64-apple-darwin20.0.0 (64-bit)
+Running under: macOS 26.5.2
+
+Matrix products: default
+BLAS:   <R_ENV>/lib/R/lib/libRblas.dylib
+LAPACK: <R_ENV>/lib/R/lib/libRlapack.dylib
+
+locale:
+[1] C.UTF-8/C.UTF-8/C.UTF-8/C/C.UTF-8/C.UTF-8
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] randomForest_4.6-14
+
+loaded via a namespace (and not attached):
+[1] compiler_4.0.5 tools_4.0.5   
+
+Local R installation prefix redacted as <R_ENV>. Software versions are unchanged.

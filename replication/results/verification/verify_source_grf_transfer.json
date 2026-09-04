@@ -1,8 +1,0 @@
-{
-  "trials": 10000,
-  "maxResponseError": 1.7763568394002505e-15,
-  "maxCriterionError": 1.7763568394002505e-15,
-  "maxPredictionError": 4.551914400963142e-15,
-  "maxInformationError": 8.881784197001252e-16,
-  "status": "PASS"
-}

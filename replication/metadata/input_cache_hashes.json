@@ -1,0 +1,26 @@
+[
+  {
+    "file": "cps_spec1_cache.rds",
+    "sha256": "3b1b06da8a5a9e366750ef3f5e99a2fed7aabab0eb657ed8203859a20f229e09"
+  },
+  {
+    "file": "cps_spec2_cache.rds",
+    "sha256": "d6a8fa43f0441bdadbb51084e1963c34f62844b80a211109cb46017ad64bbd8a"
+  },
+  {
+    "file": "nsw_spec1_cache.rds",
+    "sha256": "33050e02c3d375d9f462de5c8ac495a8692d5be458116b446c10b82ac7da282b"
+  },
+  {
+    "file": "nsw_spec2_cache.rds",
+    "sha256": "bfafbde023b67816f794fba719dd427ef94c3980a8cb7b5f85a3710919a74a19"
+  },
+  {
+    "file": "psid_spec1_cache.rds",
+    "sha256": "2969682b76002f508e8ff40d4372e60c3cb22914c1251014298d85b1e9598e9d"
+  },
+  {
+    "file": "psid_spec2_cache.rds",
+    "sha256": "790b16e4ccc0bb76e2e433003f0b4d7a264aaa752c2ad23d0d935995bc70c17e"
+  }
+]

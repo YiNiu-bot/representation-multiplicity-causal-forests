@@ -1,26 +1,22 @@
 # Third-Party Notices
 
-## Kenya cash-transfer data
+## Automatic Debiased Machine Learning replication
 
-The empirical diagnostic uses public replication files for Dennis Egger,
-Johannes Haushofer, Edward Miguel, Paul Niehaus, and Michael Walker (2022),
-"General Equilibrium Effects of Cash Transfers: Experimental Evidence From
-Kenya," *Econometrica* 90(6), 2603--2643,
-<https://doi.org/10.3982/ECTA17945>.
+The empirical exercise uses the public data-and-programs archive for Victor
+Chernozhukov, Whitney K. Newey, and Rahul Singh (2022), *Automatic Debiased
+Machine Learning of Causal and Structural Effects*, Econometrica,
+DOI [10.3982/ECTA18515](https://doi.org/10.3982/ECTA18515).
+The original archive, its R programs, and individual-level observations
+are not redistributed. Download instructions and archive identity appear
+in `replication/README.md`. The original authors' and distributors' terms
+continue to apply. The included aggregate comparisons and wrappers are
+this paper's analysis, not an endorsement by the original authors.
 
-The files are not redistributed here. Acquisition instructions and checksums
-appear in `replication/data/README.md`. The original data terms continue to
-apply.
+## Statistical software
 
-## grf
-
-The computations use the R package `grf` version 2.4.0. This repository does
-not vendor `grf`. Its source and license are available from
-<https://github.com/grf-labs/grf>. The source-facing audit is pinned to tag
-`v2.4.0`, commit `11ead50b374d3f7bd8cc88ee7205fb348efd1624`.
-
-## Other R packages
-
-R package dependencies are installed from their original distributors and
-retain their own licenses. Exact versions used for the included outputs are
-listed in `replication/metadata/software_versions.csv`.
+The Monte Carlo uses `grf` 2.4.0, available from CRAN and
+[the developers](https://github.com/grf-labs/grf).
+The empirical analysis uses `randomForest` 4.6-14 and `nnet` 7.3-16.
+These packages and R retain their original licenses and are not vendored.
+Reference session information appears in `replication/metadata/` and
+beside the empirical outputs.

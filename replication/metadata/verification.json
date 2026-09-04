@@ -1,0 +1,85 @@
+{
+  "date": "2026-09-03",
+  "empirical": {
+    "fresh_official_input_refit": true,
+    "official_archive_sha256": "89b0e810319eec93bc40418ac802820d27c96d3c1bf6ea9786f6b75fffa169db",
+    "cache_object_checks": 48,
+    "all_cache_objects_identical": true,
+    "output_checks": {
+      "native/paired_seed_results.csv": {
+        "rows": 18,
+        "columns": 17,
+        "maximum_numeric_difference": 0,
+        "all_serialized_fields_identical": true,
+        "passed": true
+      },
+      "native/paired_prediction_diagnostics.csv": {
+        "rows": 24,
+        "columns": 13,
+        "maximum_numeric_difference": 0,
+        "all_serialized_fields_identical": true,
+        "passed": true
+      },
+      "native_seed/paired_seed_results.csv": {
+        "rows": 30,
+        "columns": 17,
+        "maximum_numeric_difference": 0,
+        "all_serialized_fields_identical": true,
+        "passed": true
+      },
+      "native_seed/seed_noise_diagnostics.csv": {
+        "rows": 48,
+        "columns": 13,
+        "maximum_numeric_difference": 0,
+        "all_serialized_fields_identical": true,
+        "passed": true
+      },
+      "canonical/results.csv": {
+        "rows": 12,
+        "columns": 17,
+        "maximum_numeric_difference": 0,
+        "all_serialized_fields_identical": true,
+        "passed": true
+      },
+      "canonical/diagnostics.csv": {
+        "rows": 12,
+        "columns": 12,
+        "maximum_numeric_difference": 0,
+        "all_serialized_fields_identical": true,
+        "passed": true
+      },
+      "complete": true
+    },
+    "scope": "Original sample construction and Riesz estimation, native paired fits, seed controls, and canonical-rank paired fits."
+  },
+  "monte_carlo": {
+    "included_replications_per_cell": 100,
+    "portable_entry_smoke_replications_per_stage": 1,
+    "reference_replication_compared": 1,
+    "smoke_output_checks": {
+      "dimension/dimension_metrics.csv": {
+        "rows": 45,
+        "maximum_gap": 0
+      },
+      "dimension/prediction_losses.csv": {
+        "rows": 80,
+        "maximum_gap": 0
+      },
+      "seed_control/seed_benchmark_metrics.csv": {
+        "rows": 14,
+        "maximum_gap": 0
+      }
+    },
+    "scope": "The frozen 100-run outputs were reconstructed by the verifier. The portable refit entry was checked at full sample and forest size for replication 1. This release check did not rerun all 100 replications."
+  },
+  "paper": {
+    "pages": 20,
+    "source_sha256": {
+      "arxiv_appendix.tex": "f3d81227601e6289f8a2d2900769f51abc2400391fa57d07edb967c2f15b81a7",
+      "main.tex": "595373c2ff588c55557c969adb6fbc5dd3153c4c107d18842a3e724edc6629ad",
+      "references.bib": "81873bd273da67abe6d965bf938d214d2e14c337ebd88963ad0ce4c559f7ee5b"
+    },
+    "pdf_sha256": "46dd9d26e249ed62a284e98644c89a2b92665eb6ab69ebe506540d21c9fe5e60"
+  },
+  "limits": "Numerical reproduction and file integrity do not certify proofs, worldwide priority, or empirical accuracy gains."
+}
