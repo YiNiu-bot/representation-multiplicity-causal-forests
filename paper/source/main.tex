@@ -49,8 +49,8 @@ I show that path depth times singleton inclusion
 probability governs the limiting CATE target. When this index vanishes,
 two information-equivalent representations can disagree in sign on half the
 population and induce different treatment rules. When it converges to a finite positive constant, the singleton component is attenuated. When it diverges, both forests
-recover the CATE. The default candidate rule yields a squared-depth
-multiplicity boundary. Monte Carlo and an Econometrica replication show
+recover the CATE. The default candidate rule yields a squared-depth threshold
+for how quickly the representation size may grow. Monte Carlo and an Econometrica replication show
 finite-sample sensitivity. Sampling certified split classes restores exact
 invariance on a declared array.
 \medskip
@@ -100,7 +100,8 @@ the CATE. Every fixed finite representation covered by the theorem therefore
 recovers under the stated conditions. The failure is a lack of uniformity over growing,
 information-equivalent representations.
 
-The candidate-count rule gives a transparent boundary. In the \texttt{grf} R
+The candidate-count rule translates the access-depth index into a transparent
+condition on how quickly the number of columns may grow. In the \texttt{grf} R
 package for generalized random forests, the \texttt{mtry} parameter controls
 how many covariate columns are randomly sampled as split candidates at each
 node. With \texttt{mtry} fixed,
@@ -131,26 +132,52 @@ application of \citet{chernozhukov2022automatic}, this removes the extra
 candidate weight attached to a polynomial label without discarding any
 certified CART threshold partition.
 
-\citet{louppe2014} explains how redundant predictors change randomized split
-access, tree structure, and prediction. Related work studies variable
-selection and importance \citep{strobl2007,tolosi2011,gregorutti2017,kubus2018}.
-Recovery bounds already relate candidate access to depth
-\citep{chi2022high,klusowski2024large}, and \citet{mei2026exogenous} explicitly
-characterize unresolved-component bias for population forests with
-training-data-independent partitions. \citet{mei2026rosa} study sequential
-allocation of split opportunities. Here the partitions are grown from the
-sample and stopping is data dependent. Under the stated continuation and
-score-transfer conditions, the theorem derives their representation-specific
-prediction limits, with intermediate attenuation conditional on the
-failure-path depth limit. Sign disagreement and regret follow from these
-limits in the omission regime. The square-root-budget boundary specializes
-this analysis to a familiar recovery scale. Module sampling
-\citep{chen2013module} and inverse-cluster-size feature weighting
-\citep{colot2021} are antecedents of the correction. The class-sampling result
-provides an exact invariance guarantee on a certified finite array. Related
-work on honest forests and treatment rules includes \citet{wager2018},
-\citet{athey2019}, \citet{cattaneo2022pointwise}, \citet{cattaneo2025accuracy},
-\citet{hirano2009}, \citet{kitagawa2018}, and \citet{athey2021}.
+The paper builds on the honest causal-forest framework of \citet{wager2018}
+and the local-moment formulation of generalized random forests in
+\citet{athey2019}. These papers establish conditions for consistent estimation
+and valid inference using forest-based adaptive neighborhoods. I retain honest
+sample separation and examine how the covariate representation changes those
+neighborhoods. Under the conditions studied here, consistency for each fixed
+finite representation need not extend uniformly to growing collections of
+information-equivalent covariates. Separate samples for split selection and
+leaf estimation therefore leave an additional question about which
+treatment-effect components the forest learns.
+
+\citet{louppe2014} explains how retaining redundant predictors changes their
+probability of entering the split search and can affect prediction. I study
+the consequences of this mechanism for causal estimation and treatment
+assignment. The representations considered here preserve both covariate
+information and available threshold partitions, yet their growing
+multiplicities can produce different limiting predictions. In the omission
+regime, the two limits imply opposite treatment decisions for half the
+population and persistent regret under one representation. Thus, a
+preprocessing choice can have lasting consequences for treatment assignment
+even when it adds no information.
+
+The closest theoretical comparisons concern how feature subsampling and tree
+depth govern recovery. \citet{chi2022high} and \citet{klusowski2024large}
+provide access-dependent recovery bounds. \citet{mei2026exogenous} also
+characterize bias from unresolved components for forests with
+training-data-independent partitions. I derive representation-specific
+prediction limits for sample-grown honest trees with data-dependent stopping.
+Under the stated continuation and score-transfer conditions, these limits
+determine which components are omitted or recovered. An additional
+failure-path depth condition identifies the weight on a component under
+incomplete recovery. Establishing these limits requires relating adaptive
+splitting and stopping to the probability that a component is resolved before
+leaf estimation. The squared-depth boundary under square-root candidate
+sampling follows as a specialization.
+
+The correction builds on existing approaches to group-aware feature sampling.
+\citet{chen2013module} sample modules before representative variables, while
+\citet{colot2021} weight features inversely by cluster size. Here, groups are
+certified to generate identical threshold partitions on a declared array.
+Proposition~\ref{prop:class} shows that sampling these classes, with canonical
+routing and common class-level randomness, produces identical partitions,
+weights, predictions, reported standard errors, and selected sets across
+equivalent representations. The result gives an exact finite-array invariance
+guarantee for a group-based correction, specifying the equivalence and routing
+conditions needed to remove representation dependence.
 
 Section~\ref{sec:model} defines the model. Section~\ref{sec:results} derives
 the forest limits and their treatment-rule consequences.
@@ -300,9 +327,9 @@ On the actual and potential failure trees,
 \qquad
 \max_{h=1,2}\|\widehat T_{h,n}-\check T_{h,n}\|_{L^1(P_X)}=o_p(1).
 \end{equation}
-Conditional on the training data and fitted nuisance functions, tree groups
-are independent, have uniformly bounded size, and have the same marginal
-tree distribution.
+Conditional on the training data and fitted nuisance functions, the \(B_n\)
+trees can be partitioned into independent groups of uniformly bounded size,
+and every tree has the same marginal distribution.
 \end{assumption}
 
 The first condition in \eqref{eq:transfers}, the criterion transfer, requires
@@ -349,8 +376,9 @@ locally conditioned failure-tree construction, and an
 independent test point \(X\sim P_X\).
 
 \begin{theorem}[Representation-dependent forest limits]\label{thm:main}
-Under Assumption~\ref{ass:regularity}, the two endpoint results hold uniformly
-over \(a\in\mathcal C_a\). If \(\mathcal I_n\to0\), then
+Under the model and forest construction in Section~\ref{sec:model} and
+Assumption~\ref{ass:regularity}, the two endpoint results hold uniformly over
+\(a\in\mathcal C_a\). If \(\mathcal I_n\to0\), then
 \begin{equation}\label{eq:selection-limit}
 \max_{h=1,2}\|\widehat T_{h,n}-a_hs_h\|_{L^1(P_X)}\longrightarrow_p0.
 \end{equation}
@@ -396,10 +424,11 @@ The optimal and fitted rules are
 \begin{corollary}[Sign reversal and policy regret]\label{cor:sign}
 Under the conditions of Theorem~\ref{thm:main}, if \(\mathcal I_n\to0\), then
 \begin{equation}\label{eq:sign-reversal}
-\Prb_X\{\widehat T_{1,n}(X)\widehat T_{2,n}(X)<0\}
+\Prb_X\!\left\{\widehat T_{1,n}(X)\widehat T_{2,n}(X)<0,
+\min_{h=1,2}|\widehat T_{h,n}(X)|\ge\underline a/2\right\}
 \longrightarrow_p\frac12.
 \end{equation}
-The disagreement remains separated from zero, and
+Moreover,
 \begin{equation}\label{eq:regret}
 \operatorname{Reg}_a(\widehat\pi_{2,n})\longrightarrow_p0,
 \qquad
@@ -414,8 +443,8 @@ covariate with the smaller coefficient yields a persistent treatment mistake.
 The conclusion concerns an
 unconstrained rule. Under a capacity constraint, representation changes act
 through ranks near the assignment cutoff. To connect these asymptotic regimes
-to the forest's tuning parameters, consider the candidate-count law. In
-\texttt{grf} 2.4.0,
+to the forest's tuning parameters, consider the candidate-count law. According
+to the \texttt{grf} 2.4.0 algorithm reference \citep{grfreference}, this law is
 \begin{equation}\label{eq:poisson-count}
 N_M\sim\Pois(\xi_M),
 \qquad
@@ -423,9 +452,8 @@ Q_M=\max\{1,\min(N_M,M)\},
 \qquad
 \xi_M=\texttt{mtry}
 \end{equation}
-\citep{grfreference}.
 
-\begin{corollary}[Multiplicity boundary]\label{cor:boundary}
+\begin{corollary}[Representation-growth rates]\label{cor:boundary}
 Under the conditions of Theorem~\ref{thm:main}, if
 \(M_n\to\infty\) and \(\xi_{M_n}\equiv\xi>0\), then
 \[
@@ -467,16 +495,19 @@ randomization by the certificate rather than by the original column label.
 Hold nuisance fits fixed across representations or fit them on the same
 canonical matrix. All tuning rules and reported outputs use this matrix and
 the same settings.
-Because this reduction occurs before candidate sampling, adding or removing a
-split-equivalent recoding does not alter either the candidate probabilities or
-the random draws.
+For policy ranking, break prediction ties by a fixed ordering of observation
+indices.
+Because this reduction occurs before candidate sampling, adding a recoding to
+an existing class, or removing one without removing its class, does not alter
+either the candidate probabilities or the random draws.
 
 \begin{proposition}[Class-sampled forest]\label{prop:class}
 Fix the certified classes, canonical routing, and class-level candidate law.
-Under common class-indexed randomness, permutation, insertion, or deletion
-within a represented class, complementation, and every recoding that preserves
-or reverses the observed weak ordering and ties leave all tree partitions,
-forest weights, predictions, reported standard errors, and selected sets on
+Under common class-indexed randomness, permuting columns, adding a column to
+an existing class, deleting a column without removing its class,
+complementing a column, or applying a recoding that preserves or reverses the
+observed weak ordering and ties leaves all tree partitions, forest weights,
+predictions, reported standard errors, and selected sets on
 \(\mathcal X_{\rm cert}\) unchanged.
 \end{proposition}
 
@@ -727,10 +758,11 @@ weight placed on a CATE component in the forest's limiting target. Growing infor
 representations can therefore yield opposite CATE signs and treatment rules,
 although every fixed finite representation covered by the theorem recovers under the stated conditions. In the Monte Carlo, class sampling lowers treatment-rule regret while increasing CATE squared error. The Econometrica replication finds movement in individual first stages alongside stable aggregate ATET conclusions. Class sampling prevents sign reversals caused solely by split-equivalent recodings on the certified array without discarding certified split actions.
 
-\clearpage
 \input{arxiv_appendix}
 
-\clearpage
+\begingroup
+\small
 \bibliographystyle{plainnat}
 \bibliography{references}
+\endgroup
 \end{document}
