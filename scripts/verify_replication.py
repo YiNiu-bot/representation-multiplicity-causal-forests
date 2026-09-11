@@ -5,6 +5,7 @@ from collections import defaultdict
 import hashlib
 import json
 import math
+import re
 from pathlib import Path
 import statistics
 
@@ -79,13 +80,15 @@ def main():
             close(row['mcse'], z['mcse'])
 
     source = (ROOT / 'paper/source/main.tex').read_text()
+    source = re.sub(r'\\textbf\{([^{}]*)\}', r'\1', source)
     def displayed(number, places, commas=False):
         token = format(number, (',' if commas else '') + f'.{places}f')
         assert token in source, ('Number absent from manuscript source', token)
 
     def table_row(tokens):
         row = ' & '.join(tokens) + r'\\'
-        assert row in source, ('Empirical table row does not match outputs', row)
+        normalize = lambda text: re.sub(r'\s+', ' ', text).strip()
+        assert normalize(row) in normalize(source), ('Table row does not match outputs', row)
 
     def estimate(row):
         return f"{float(row['atet']):,.1f} ({float(row['se']):,.1f})"
@@ -98,16 +101,32 @@ def main():
             row[metric] = {k: 100*v for k, v in z.items()}
             displayed(100*z['mean'], 2)
         table1.append(row)
+        sign = dimension[p, 'ordinary_default', 'sign_reversal']
+        strong = dimension[p, 'ordinary_default', 'strong_reversal_010']
+        precision = 3 if p == '40' else 2
+        table_row([rf'\(p={p}\), representation change', str(int(p) + 8),
+                   f"{100*sign['mean']:.2f} ({100*sign['mcse']:.2f})",
+                   f"{100*strong['mean']:.2f} ({100*strong['mcse']:.{precision}f})"])
     close(dimension['500', 'class_sampled_default', 'mean_absolute_prediction_change']['mean'], 0, 0)
     table1.append({'seed_control': seed['second_seed', 'sign_reversal']})
     for key, z in losses.items():
         if key[2] in ('mse', 'regret') and key[1] != 'class_x2':
             displayed(z['mean'], 4)
             displayed(z['mcse'], 4)
-    for key, z in paired.items():
-        if key[1].startswith('class_') and key[2] in ('mse', 'regret'):
-            displayed(z['mean'], 4)
-            displayed(z['mcse'], 4)
+    for p in ('40', '100', '250', '500'):
+        for method, label, dimension_label in (
+                ('ordinary_x1', r'Recodings of \(X_1\)', p),
+                ('ordinary_x2', r'Recodings of \(X_2\)', '')):
+            mse, regret = [losses[p, method, metric] for metric in ('mse', 'regret')]
+            table_row([dimension_label, label, f"{mse['mean']:.4f}",
+                       f"({mse['mcse']:.4f})", f"{regret['mean']:.4f}",
+                       f"({regret['mcse']:.4f})"])
+    mse, regret = [losses['500', 'class_x1', metric] for metric in ('mse', 'regret')]
+    table_row(['', 'Class sampling', f"{mse['mean']:.4f}",
+               f"({mse['mcse']:.4f})", f"{regret['mean']:.4f}",
+               f"({regret['mcse']:.4f})"])
+    # Paired differences remain checked against raw outputs above, even when
+    # the manuscript reports only the levels of MSE and regret.
 
     empirical = RESULTS / 'empirical'
     native = read(empirical / 'native/paired_seed_results.csv')

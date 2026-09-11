@@ -41,18 +41,7 @@
 \maketitle
 
 \begin{abstract}
-\noindent Feature-subsampled forests treat split-equivalent covariate columns as
-distinct candidates. Keeping a covariate together with strict monotone transformations therefore
-changes how often the covariate is considered without changing available information.
-For an honest causal forest satisfying continuation and score-transfer conditions,
-I show that path depth times singleton inclusion
-probability governs the limiting CATE target. When this index vanishes,
-two information-equivalent representations can disagree in sign on half the
-population and induce different treatment rules. When it converges to a finite positive constant, the singleton component is attenuated. When it diverges, both forests
-recover the CATE. The default candidate rule yields a squared-depth threshold
-for how quickly the representation size may grow. Monte Carlo and an Econometrica replication show
-finite-sample sensitivity. Sampling certified split classes restores exact
-invariance on a declared array.
+\noindent Including covariates alongside strictly monotone transformations can change a causal forest's treatment decisions without adding information. Random feature selection favors covariates represented by multiple columns. Under stated conditions, I show that this imbalance can persist as samples grow. Treatment effect components associated with other covariates are omitted, attenuated, or recovered depending on their inclusion probabilities and tree depth. Simulations and a job-training replication illustrate sensitivity to redundant variables. Sampling groups of variables that generate identical splits makes forest predictions invariant across equivalent representations on the data used to define the groups, with canonical routing and common randomness.
 \medskip
 
 \noindent\textbf{Keywords:} causal forests, feature subsampling, policy learning,
@@ -79,28 +68,28 @@ The effect of this change depends on the whole path to a leaf. A covariate that
 drives treatment-effect heterogeneity matters only after a split separates its
 relevant states. If such a covariate is represented once among many columns,
 each node offers a small chance to use it. Those chances accumulate with path
-depth. This paper studies the resulting access-depth interaction.
+depth.
 
-The main result uses two independent covariates with binary treatment-effect
+The main result models two independent covariates with binary treatment-effect
 components. One has a smaller coefficient than the other.
 The first representation repeats the covariate with the smaller coefficient
 and leaves the other as a singleton. The second does the reverse. Both
 representations generate the same sigma-field and the same
 split-action library. Let \(H_n\) be effective path depth, \(M_n\) the number
-of columns, and \(Q_{M_n}\) the number sampled at a node. The relevant index is $\mathcal I_n=H_n{\E [Q_{M_n}]}/{M_n}$.
+of columns, and \(Q_{M_n}\) the number sampled at a node. The access-depth index is $\mathcal I_n=H_n{\E [Q_{M_n}]}/{M_n}$.
 
 Under the continuation and score-transfer conditions stated below, if
 \(\mathcal I_n\to0\), the singleton covariate remains unused along a
 prediction path with probability approaching one. Each forest then retains
-only its repeated component. The two CATE
+only its repeated component. The two conditional average treatment effect (CATE)
 limits have opposite signs on half the covariate population, and repeating the
 covariate with the smaller coefficient produces nonvanishing policy regret. If
 \(\mathcal I_n\to\kappa\in(0,\infty)\), the singleton component enters with a strictly intermediate weight under the additional path-depth condition in Theorem~\ref{thm:main}. If \(\mathcal I_n\to\infty\), both forests recover
-the CATE. Every fixed finite representation covered by the theorem therefore
-recovers under the stated conditions. The failure is a lack of uniformity over growing,
-information-equivalent representations.
+the CATE. Under these conditions, recovery holds for every fixed finite
+representation but not uniformly over growing, information-equivalent
+representations.
 
-The candidate-count rule translates the access-depth index into a transparent
+The candidate-count rule translates the access-depth index into a
 condition on how quickly the number of columns may grow. In the \texttt{grf} R
 package for generalized random forests, the \texttt{mtry} parameter controls
 how many covariate columns are randomly sampled as split candidates at each
@@ -112,24 +101,24 @@ scaling in \texttt{grf}, it has order
 
 With 500 baseline columns and eight equivalent recodings, the Monte Carlo
 forests disagree in CATE sign for 45.7 percent of evaluation observations.
-Changing only the forest seed gives 0.09 percent. Class sampling eliminates
-representation-induced disagreement and reduces policy regret in this design,
-although its CATE mean squared error is higher. The random-forest
+Changing only the forest seed gives 0.09 percent. The random-forest
 outcome-regression specifications in \citet{chernozhukov2022automatic} retain
 age, education, and two prior-earnings variables together with their squares.
-Grouping columns that rank the observations identically and retaining one
-representative from each group substantially changes some individual
-first-stage contrasts. The six reconstructed ATETs change only modestly, 
-remaining positive and yielding the same conclusions about statistical
-significance at the 5 percent level.
+The replication removes split-equivalent columns from the outcome regression
+while holding the samples, folds, Riesz stage based on the least absolute
+shrinkage and selection operator (Lasso), and orthogonal score fixed.
 
 The remedy is to sample split-action classes rather than raw column labels.
 On a declared finite array, columns with the same weak ordering and ties
-generate the same threshold actions. Collapsing them before candidate sampling
-gives exact equality of tree partitions, forest weights, predictions, reported
-standard errors, and selected sets under common class-level randomness. In the
-application of \citet{chernozhukov2022automatic}, this removes the extra
-candidate weight attached to a polynomial label without discarding any
+generate the same threshold actions for classification and regression trees
+(CART). Collapsing them before candidate sampling
+gives identical predictions under canonical routing and common class-level
+randomness. In the
+Monte Carlo design, class sampling eliminates representation-induced sign
+disagreement and reduces policy regret, although it increases CATE mean
+squared error. In the application of \citet{chernozhukov2022automatic},
+grouping each raw variable with its split-equivalent square removes the extra
+candidate weight created by retaining both columns while preserving every
 certified CART threshold partition.
 
 The paper builds on the honest causal-forest framework of \citet{wager2018}
@@ -137,52 +126,35 @@ and the local-moment formulation of generalized random forests in
 \citet{athey2019}. These papers establish conditions for consistent estimation
 and valid inference using forest-based adaptive neighborhoods. I retain honest
 sample separation and examine how the covariate representation changes those
-neighborhoods. Under the conditions studied here, consistency for each fixed
-finite representation need not extend uniformly to growing collections of
-information-equivalent covariates. Separate samples for split selection and
-leaf estimation therefore leave an additional question about which
-treatment-effect components the forest learns.
+neighborhoods. Honest sample separation does not by itself ensure that every
+treatment-effect component is recovered, because feature subsampling can keep
+a relevant covariate out of the split search.
 
-\citet{louppe2014} explains how retaining redundant predictors changes their
-probability of entering the split search and can affect prediction. I study
-the consequences of this mechanism for causal estimation and treatment
-assignment. The representations considered here preserve both covariate
-information and available threshold partitions, yet their growing
-multiplicities can produce different limiting predictions. In the omission
-regime, the two limits imply opposite treatment decisions for half the
-population and persistent regret under one representation. Thus, a
-preprocessing choice can have lasting consequences for treatment assignment
-even when it adds no information.
-
-The closest theoretical comparisons concern how feature subsampling and tree
-depth govern recovery. \citet{chi2022high} and \citet{klusowski2024large}
+\citet{louppe2014} explains how retaining redundant predictors changes
+their probability of entering the split search and can affect prediction.
+Here I study how that change in split access affects limiting CATE estimates
+and treatment-rule regret.
+\citet{chi2022high} and \citet{klusowski2024large}
 provide access-dependent recovery bounds. \citet{mei2026exogenous} also
 characterize bias from unresolved components for forests with
 training-data-independent partitions. I derive representation-specific
-prediction limits for sample-grown honest trees with data-dependent stopping.
-Under the stated continuation and score-transfer conditions, these limits
-determine which components are omitted or recovered. An additional
-failure-path depth condition identifies the weight on a component under
-incomplete recovery. Establishing these limits requires relating adaptive
-splitting and stopping to the probability that a component is resolved before
-leaf estimation. The squared-depth boundary under square-root candidate
-sampling follows as a specialization.
+prediction limits for sample-grown honest trees under continuation and
+score-transfer conditions. Their path lengths depend on earlier splits, so
+singleton access must be analyzed jointly with stopping. An additional
+failure-path depth condition identifies the partial-recovery weight.
 
-The correction builds on existing approaches to group-aware feature sampling.
 \citet{chen2013module} sample modules before representative variables, while
 \citet{colot2021} weight features inversely by cluster size. Here, groups are
 certified to generate identical threshold partitions on a declared array.
-Proposition~\ref{prop:class} shows that sampling these classes, with canonical
-routing and common class-level randomness, produces identical partitions,
-weights, predictions, reported standard errors, and selected sets across
-equivalent representations. The result gives an exact finite-array invariance
-guarantee for a group-based correction, specifying the equivalence and routing
-conditions needed to remove representation dependence.
+Proposition~\ref{prop:class} establishes exact invariance on this array under
+canonical routing and common class-level randomness.
 
 Section~\ref{sec:model} defines the model. Section~\ref{sec:results} derives
 the forest limits and their treatment-rule consequences.
 Section~\ref{sec:quotient} gives the class-sampling guarantee, and
-Section~\ref{sec:evidence} reports the evidence. All proofs are in the appendix.
+Section~\ref{sec:evidence} reports Monte Carlo results and a replication of
+the empirical analyses in \citet{chernozhukov2022automatic}.
+All proofs are in the appendix.
 
 \section{Model Setup}\label{sec:model}
 
@@ -191,7 +163,7 @@ vector. For coordinate \(j\in\{1,2\}\), define the binary state indicator
 \[
 s_j(X)=2\one\{X_j\ge1/2\}-1,
 \]
-and define the conditional average treatment effect (CATE)
+and define the CATE
 \[
 \tau_a(X)=a_1s_1(X)+a_2s_2(X),
 \]
@@ -206,6 +178,8 @@ where \(\underline a\) and \(\overline a\) are fixed lower and upper
 coefficient bounds satisfying \(0<\underline a<\overline a\), and
 \(\Delta_a\) is a fixed minimum coefficient gap, with
 \(0<\Delta_a<\overline a-\underline a\).
+These restrictions keep the sign and regret comparisons nondegenerate
+uniformly over \(\mathcal C_a\).
 
 Let \(n\) be the sample size, and let \((Y_i,W_i,X_i)_{i=1}^n\) denote the
 i.i.d. observations. For treatment state \(w\in\{0,1\}\), the potential
@@ -239,30 +213,31 @@ cross-fitted outcome-regression estimator \(\widehat m\).
 For covariate index \(j\in\{1,2\}\), let \(c_n\ge1\) be the representation
 multiplicity. Choose strictly increasing recoding maps
 \(\{\varphi_{j\ell n}:\ell=1,\ldots,c_n\}\), including the identity, and
-denote the \(\ell\)th recoded column by
+denote the \(\ell\)-th recoded column by
 \(X_j^{(\ell)}=\varphi_{j\ell n}(X_j)\). Define the paired covariate
 representations
 \begin{align*}
 R_{1,n}(X)=\{X_1^{(1)},\ldots,X_1^{(c_n)},X_2\},\qquad R_{2,n}(X)=\{X_1,X_2^{(1)},\ldots,X_2^{(c_n)}\}.
 \end{align*}
-For representation index \(h\in\{1,2\}\), \(R_{h,n}\) denotes representation
-\(h\), and \(M_n=c_n+1\) is its raw column count. Both representations
+Each representation has \(M_n=c_n+1\) raw columns. Both representations
 generate the covariate sigma-field \(\sigma(X_1,X_2)\). A cut \(X_j\le t\)
 corresponds to \(\varphi_{j\ell n}(X_j)\le\varphi_{j\ell n}(t)\) in each
 recoded column. These corresponding cuts preserve partitions and routing in
-exact arithmetic. The first representation repeats \(X_1\), whose coefficient is
-smaller. The second repeats \(X_2\), whose coefficient is larger.
+exact arithmetic.
 
-Each tree draws \(s_n\) observations uniformly without replacement and
+Let \(s_n\) be the tree subsample size. Each tree draws \(s_n\)
+observations uniformly without replacement and
 randomly divides them into splitting and estimation samples, independently
 of their values. Both sample fractions are at least a fixed
-\(\eta\in(0,1/2)\). Write \(n_C\) for the splitting-sample count in node
+\(\eta\in(0,1/2)\), the minimum sample-allocation fraction.
+Write \(n_C\) for the splitting-sample count in node
 \(C\). At a node with \(M\) raw columns, the tree draws
-\(Q_M\in\{1,\ldots,M\}\) and samples that many columns uniformly without
+candidate count \(Q_M\in\{1,\ldots,M\}\) and samples that many columns uniformly without
 replacement, independently of the data and previous candidate draws. It
-evaluates every distinct threshold partition of the sampled columns. A split
-is admissible when each child contains at least \(k_n\) splitting observations
-and at least a fraction \(\beta\in(0,1/2)\) of the parent's splitting sample.
+evaluates every distinct threshold partition of the sampled columns. With
+minimum child splitting-sample size \(k_n\) and split-balance parameter
+\(\beta\in(0,1/2)\), a split is admissible when each child contains at least
+\(\max\{k_n,\beta n_C\}\) splitting observations.
 The tree chooses a maximum-gain admissible split, using a
 representation-independent order for exact ties. It stops if no sampled
 admissible action has positive gain, with no separate depth cap or stopping
@@ -271,15 +246,14 @@ with value zero assigned to an empty estimation leaf.
 Conditional on the training data, fitted nuisance functions, and root sample
 assignments, each node's action depends only on its ancestral states, its
 observations, and fresh randomness assigned to that node. Randomization is
-independent across node addresses. Actions do not depend on candidate draws
-or split decisions on other branches.
+independent across node addresses.
 
-A coordinate is used on a prediction path once it has been chosen as the
-splitting coordinate. For a generic tree under representation \(h\), let
-\(D_{h,n}(x)\) indicate that the singleton \(X_{3-h}\) has been used before
-the path to \(x\) stops. First use need not make the leaf exactly pure in
-\(s_{3-h}\). The proof controls the resulting approximation error in
-\(L^1(P_X)\), where \(P_X\) is the covariate distribution.
+For a generic tree under representation \(h\), let \(D_{h,n}(x)\) indicate
+that the singleton \(X_{3-h}\) has been used as a splitting coordinate along
+the path to \(x\). Even after a split on \(X_{3-h}\), the terminal
+leaf may contain both values of \(s_{3-h}\). The proof controls the resulting approximation error in
+\(L^1(P_X)\), where \(P_X\) is the covariate distribution and
+\(\|f\|_{L^1(P_X)}=\int |f(x)|\,dP_X(x)\) is the integrated absolute norm.
 For a candidate split indexed by column \(j\) and threshold \(t\), let \(C\)
 be the parent cell and \(C_L\) and \(C_R\) its left and right child cells.
 Define the pseudo-outcome split-gain criterion
@@ -295,53 +269,53 @@ child shares within \(C\), and
 \(\overline{\widehat\Gamma}_{C_R}\) are the corresponding child-cell score
 means. Let \(\widehat{\mathcal Q}^{L}_C(j,t)\) be the forest algorithm's normalized
 split-gain criterion, \(\check T_{h,n}\) the arithmetic mean of the
-\(B_n\) honest score-leaf predictions, and \(\widehat T_{h,n}\) the
+\(B_n\) honest score-leaf predictions, where \(B_n\) is the number of trees,
+and \(\widehat T_{h,n}\) the
 reported forest predictor under
 representation \(R_{h,n}\). The following conditions connect the forest
 algorithm to the score and control tree depth.
 
 \begin{assumption}\label{ass:regularity}
-All probability statements and stochastic rates in this assumption hold
-uniformly over \(a\in\mathcal C_a\). Outcomes are uniformly bounded, the conditional law
-of \(U\) has a continuous density on bounded support, and
-\(\|\widehat m-m_a\|_\infty=o_p(1)\), with
-\(\|\widehat m\|_\infty=O_p(1)\), where \(\|\cdot\|_\infty\) is the sup norm.
-For a fixed \(C_0>4\), with probability tending to one, every representation
-column has a positive-gain admissible threshold at every reached node with
-\(n_C\ge C_0k_n\), on ordinary trees and on the locally conditioned failure
-trees defined below, whenever those trees are defined. Let \(\bar s<1\)
-be a fixed upper bound on the tree subsampling fraction. Then
+All probability statements and rates hold uniformly over
+\(a\in\mathcal C_a\). Outcomes are uniformly bounded, the conditional
+law of \(U\) has a continuous density on bounded support, and
+\(\|\widehat m-m_a\|_\infty=o_p(1)\).
+
+For fixed \(C_0>4\), with probability tending to one, every column
+admits a positive-gain admissible split at every reached node with
+\(n_C\ge C_0k_n\), on both ordinary and locally conditioned failure
+trees whenever defined. For fixed \(\bar s<1\),
 \begin{equation}\label{eq:rates}
-\begin{gathered}
-s_n\to\infty,\qquad s_n/n\le\bar s<1,\qquad k_n\to\infty,\\
-k_n/s_n\to0,\qquad
-\frac{k_n}{\log(B_ns_n)}\to\infty,\qquad B_n\to\infty.
-\end{gathered}
+s_n/n\le\bar s,\qquad
+k_n\to\infty,\qquad k_n/s_n\to0,\qquad
+\frac{\log(B_ns_n)}{k_n}\to0,\qquad B_n\to\infty.
 \end{equation}
-On the actual and potential failure trees,
+On ordinary and failure trees,
 \begin{equation}\label{eq:transfers}
-\sup_{C,j,t}\left|
-\widehat{\mathcal Q}^{L}_C(j,t)
--\widehat{\mathcal Q}^{\Gamma}_C(j,t)
-\right|=o_p(1),
+\sup_{C,j,t}
+\left|\widehat{\mathcal Q}^{L}_C(j,t)
+-\widehat{\mathcal Q}^{\Gamma}_C(j,t)\right|=o_p(1),
 \qquad
-\max_{h=1,2}\|\widehat T_{h,n}-\check T_{h,n}\|_{L^1(P_X)}=o_p(1).
+\max_{h=1,2}
+\|\widehat T_{h,n}-\check T_{h,n}\|_{L^1(P_X)}=o_p(1).
 \end{equation}
-Conditional on the training data and fitted nuisance functions, the \(B_n\)
-trees can be partitioned into independent groups of uniformly bounded size,
-and every tree has the same marginal distribution.
+Conditional on the training data and fitted nuisance functions,
+trees have identical marginal distributions and form independent
+groups of uniformly bounded size.
 \end{assumption}
 
-The first condition in \eqref{eq:transfers}, the criterion transfer, requires
-uniformly close gain values and hence preserves comparisons separated by a
-fixed positive gap. The
-second, the prediction transfer, requires its reported predictor to agree with
-the honest score-leaf forest. These algorithm-specific conditions are combined
-with the candidate-count law. The continuation condition ensures growth to
-the minimum-size region even when only a previously used coordinate is
-offered. Balance and vanishing criterion error alone do not ensure this.
-The theorem requires these conditions to be checked for the forest algorithm
-under study.
+Assumption~\ref{ass:regularity} connects the algorithm's split choices
+and predictions to the treatment effect. The first condition in
+\eqref{eq:transfers} ensures that the algorithm prefers a split with
+a meaningfully larger gain in the fitted treatment-effect score.
+The second allows its reported predictions to be analyzed through
+averages of that score within honest leaves. The continuation condition
+ensures that a tree keeps splitting while its nodes remain sufficiently
+large, including when the candidate set contains only a previously used
+covariate. Continued growth gives the other covariate further chances
+to enter the split search. Together, these conditions allow the theorem
+to relate tree depth and candidate inclusion probabilities to the
+treatment effect components that the forest recovers.
 
 Finally, define the effective path depth \(H_n\), the singleton's per-node
 inclusion probability \(\omega_n\), and the access-depth index
@@ -353,8 +327,6 @@ H_n=\log(s_n/k_n),
 \qquad
 \mathcal I_n=H_n\omega_n.
 \end{equation}
-The access-depth index combines the number of opportunities along a path with
-the chance of accessing the singleton at each node.
 
 \section{Forest Limits and Treatment-Rule Distortion}\label{sec:results}
 
@@ -371,7 +343,8 @@ fixed \(a\in\mathcal C_a\), additionally suppose
 \frac{J_{h,n}^0(X)}{H_n}\longrightarrow_p d_h(a)\in(0,\infty),
 \qquad h=1,2,
 \end{equation}
-where the convergence accounts for randomness in the training sample, the
+where \(d_h(a)\) is the limiting normalized failure-path depth under
+representation \(h\). The convergence accounts for randomness in the training sample, the
 locally conditioned failure-tree construction, and an
 independent test point \(X\sim P_X\).
 
@@ -398,28 +371,34 @@ For fixed \(a\in\mathcal C_a\), if \(\mathcal I_n\to\kappa\in(0,\infty)\) and \e
 \end{equation}
 \end{theorem}
 
-The index \(\mathcal I_n\) measures how many opportunities the singleton has
-along a path. When the index vanishes, the singleton remains unused with
+When \(\mathcal I_n\to0\), the singleton remains unused with
 probability approaching one, and its component drops out of the limit. In the intermediate regime,
 \(e^{-\kappa d_h(a)}\) is the limiting probability that a path reaches its
 leaf without using the singleton, so the singleton component is attenuated by
-the complementary factor \(1-e^{-\kappa d_h(a)}\in(0,1)\). When the index
+the complementary factor \(1-e^{-\kappa d_h(a)}\in(0,1)\). When the access-depth index
 diverges, both components are recovered in the forest prediction.
 The result applies equally to exact copies and to growing sequences of
 strictly increasing recodings.
 
-For a treatment rule \(\pi\), let
+For a binary treatment rule \(\pi\), where \(\pi(x)=1\) assigns treatment
+and \(\pi(x)=0\) withholds it, define its policy value \(V_a(\pi)\) and
+policy regret \(\operatorname{Reg}_a(\pi)\) by
 \[
 V_a(\pi)=\E\{\tau_a(X)\pi(X)\},
 \qquad
-\operatorname{Reg}_a(\pi)=V_a(\pi_a^*)-V_a(\pi),
+\operatorname{Reg}_a(\pi)=V_a(\pi_a^*)-V_a(\pi).
 \]
-The optimal and fitted rules are
+Policy value is the expected treatment gain relative to treating no one,
+and policy regret is the value lost relative to the optimal unconstrained
+rule \(\pi_a^*\). This optimal rule and the fitted rule
+\(\widehat\pi_{h,n}\) under representation \(h\) are
 \[
 \pi_a^*(x)=\one\{\tau_a(x)>0\}=\one\{s_2(x)=1\},
 \qquad
 \widehat\pi_{h,n}(x)=\one\{\widehat T_{h,n}(x)>0\}.
 \]
+Write \(\Prb_X\) for probability over an independent covariate draw,
+conditional on the fitted forests.
 
 \begin{corollary}[Sign reversal and policy regret]\label{cor:sign}
 Under the conditions of Theorem~\ref{thm:main}, if \(\mathcal I_n\to0\), then
@@ -440,11 +419,9 @@ Moreover,
 Thus the representation that repeats the covariate with the larger coefficient
 yields the optimal unconstrained rule in the selection regime. Repeating the
 covariate with the smaller coefficient yields a persistent treatment mistake.
-The conclusion concerns an
-unconstrained rule. Under a capacity constraint, representation changes act
-through ranks near the assignment cutoff. To connect these asymptotic regimes
-to the forest's tuning parameters, consider the candidate-count law. According
-to the \texttt{grf} 2.4.0 algorithm reference \citep{grfreference}, this law is
+
+The \texttt{grf} 2.4.0 algorithm reference \citep{grfreference} specifies the
+candidate-count law as
 \begin{equation}\label{eq:poisson-count}
 N_M\sim\Pois(\xi_M),
 \qquad
@@ -452,6 +429,9 @@ Q_M=\max\{1,\min(N_M,M)\},
 \qquad
 \xi_M=\texttt{mtry}
 \end{equation}
+Here \(N_M\) is the uncapped Poisson candidate count, \(\xi_M\) is its
+mean parameter, and \(Q_M\) is the candidate count after truncation to
+\(\{1,\ldots,M\}\).
 
 \begin{corollary}[Representation-growth rates]\label{cor:boundary}
 Under the conditions of Theorem~\ref{thm:main}, if
@@ -466,17 +446,21 @@ default \(\xi_M=\min\{\lceil\sqrt M\rceil+20,M\}\),
 \(\mathcal I_n\to\infty\).
 \end{corollary}
 
-The theorem does not invalidate fixed-dimensional causal-forest consistency.
-Instead, it adds a rate requirement. Recovery requires the access-depth index
-\(H_n\E(Q_{M_n})/M_n\) to diverge. Every fixed finite representation satisfies
-this condition asymptotically, but an empirical forest is fitted at a finite
-sample size, where the index remains finite and may be small. Representation
-sensitivity can therefore remain practically important even when asymptotic
-consistency eventually holds.
+Under the default rule, recovery is guaranteed when
+\(M_n=o(H_n^2)\), compared with \(M_n=o(H_n)\) for a fixed
+Poisson mean. Since \(H_n=\log(s_n/k_n)\), increasing the sample
+size expands the scope for redundant columns only slowly.
+The default rule permits faster growth in the number of columns,
+but retaining many equivalent transformations can still leave
+a covariate represented once with few opportunities to affect
+prediction. Every fixed representation covered by the theorem
+eventually satisfies these growth conditions. In finite samples,
+however, these asymptotic rates provide no numerical cutoff for
+how many redundant columns are acceptable.
 
 \section{Finite-Array Class Sampling}\label{sec:quotient}
 
-An invariant forest can sample split classes instead of raw columns. Fix an
+I propose sampling split classes instead of individual columns. Fix an
 array \(\mathcal X_{\rm cert}=\{x_1,\ldots,x_N\}\) containing every point used
 for fitting, prediction, variance estimation, and policy ranking. A column's
 certificate is its weak ordering of this array, identified with the reversed
@@ -511,21 +495,34 @@ predictions, reported standard errors, and selected sets on
 \(\mathcal X_{\rm cert}\) unchanged.
 \end{proposition}
 
-This guarantee is transductive. It covers the declared array, not future
-points whose ordering has not been certified, and it does not merge correlated
-variables with different orderings.
+This guarantee applies to the declared array, not to future points whose
+ordering has not been certified. The grouping criterion also differs from
+that of \citet{chen2013module}, who construct modules of correlated variables
+and sample a representative from each selected module. Correlation alone
+is not sufficient for the split classes used here.
 
 \section{Finite-Sample Evidence}\label{sec:evidence}
 
+The Monte Carlo compares CATE estimation error and policy regret across
+redundant encodings and under class sampling. In the
+job-training application of \citet{chernozhukov2022automatic}, the comparison
+instead concerns changes in individual outcome-regression contrasts and
+estimates of the average treatment effect on the treated (ATET). In each
+exercise, refitting with a different forest
+seed provides a benchmark for the changes caused by recoding.
+
 \subsection{Monte Carlo}
 
-The Monte Carlo independently draws \(X\sim\operatorname{Unif}([0,1]^p)\),
+Let \(p\) be the number of baseline covariates. The Monte Carlo independently draws \(X\sim\operatorname{Unif}([0,1]^p)\),
 \(W\sim\operatorname{Bernoulli}(1/2)\), and
 \begin{align*}
 \tau(X)&=0.20+0.65s_1-0.55s_2+0.10(X_3-0.5),\\
 Y&=1+X_4+0.5X_5^2-0.5X_6+W\tau(X)+\varepsilon,
 \qquad \varepsilon\sim N(0,1).
 \end{align*}
+Here \(\varepsilon\) is the outcome disturbance and
+\(s_j=2\one\{X_j\ge1/2\}-1\) is the binary state indicator for
+coordinate \(j\in\{1,2\}\).
 Table~\ref{tab:mc} compares paired representations that add eight monotone or
 order-reversing recodings of \(X_1\) or \(X_2\). These are standardization,
 complementation, an affine change of units, a shifted logarithm, ranks, a
@@ -537,8 +534,9 @@ Thus the comparison isolates the forest fit from nuisance-estimation error.
 The forests use default \texttt{mtry}, a minimum node size of five, and
 honest half-samples with an equal split between partition construction and
 leaf estimation. Data and forest seeds are paired. For predictions
-\(\widehat\tau_1\) and \(\widehat\tau_2\), \(\mathrm{SR}_c\) is the fraction
-with opposite signs and both magnitudes at least \(c\).
+\(\widehat\tau_1\) and \(\widehat\tau_2\), define the sign-disagreement rate
+\(\mathrm{SR}_c\) as the fraction with opposite signs and both magnitudes
+at least the magnitude threshold \(c\ge0\).
 
 \begin{table}[htbp]
 \caption{CATE sign disagreement under equivalent representations}
@@ -546,7 +544,7 @@ with opposite signs and both magnitudes at least \(c\).
 \centering
 \small
 \setlength{\tabcolsep}{5pt}
-\begin{tabular}{@{}lrrr@{}}
+\begin{tabular}{@{}lccc@{}}
 \toprule
 Comparison & Raw columns & \(\mathrm{SR}_0\) (\%) & \(\mathrm{SR}_{0.10}\) (\%)\\
 \midrule
@@ -554,8 +552,8 @@ Comparison & Raw columns & \(\mathrm{SR}_0\) (\%) & \(\mathrm{SR}_{0.10}\) (\%)\
 \(p=100\), representation change & 108 & 23.41 (0.66) & 12.70 (0.83)\\
 \(p=250\), representation change & 258 & 38.60 (0.84) & 26.87 (0.73)\\
 \(p=500\), representation change & 508 & 45.74 (0.54) & 32.88 (0.91)\\
-\(p=500\), second forest seed     & 508 &  0.09 (0.01) &  0.00 (0.00)\\
-\(p=500\), class-sampled forest   & 508 &  0.00 (0.00) &  0.00 (0.00)\\
+\(p=500\), forest-seed change    & 508 &  0.09 (0.01) &  0.00 (0.00)\\
+\(p=500\), class-sampled forest   & 508 &  \textbf{0.00} (0.00) &  \textbf{0.00} (0.00)\\
 \bottomrule
 \end{tabular}
 \legend{Entries are means across 100 independent replications, with Monte Carlo
@@ -570,21 +568,21 @@ estimates at least 0.10 in magnitude. Changing only the forest seed produces
 0.09 percent sign disagreement. Class sampling removes the difference exactly
 on the pooled training and evaluation array.
 
-Accuracy and treatment decisions need not move together. For evaluation
-observations \(X_1^e,\ldots,X_N^e\), with \(N=30{,}000\), define
+For the \(N=30{,}000\) evaluation observations \(X_1^e,\ldots,X_N^e\),
+define CATE mean squared error (MSE) \(\mathrm{MSE}_j\) and treatment-rule regret
+\(\mathrm{Reg}_j\) as
 \[
 \begin{aligned}
 \mathrm{MSE}_j&=\frac1N\sum_{i=1}^N
- \{\widehat\tau_j(X_i^e)-\tau(X_i^e)\}^2,\\
-\mathrm{Reg}_j&=\frac1N\sum_{i=1}^N |\tau(X_i^e)|
+ \{\widehat\tau_j(X_i^e)-\tau(X_i^e)\}^2,\qquad\mathrm{Reg}_j=\frac1N\sum_{i=1}^N |\tau(X_i^e)|
  \one\{\widehat\pi_j(X_i^e)\ne\pi^*(X_i^e)\},
 \end{aligned}
 \]
 where \(j\) indexes the fitted forest,
-\(\widehat\pi_j(x)=\one\{\widehat\tau_j(x)>0\}\), and
-\(\pi^*(x)=\one\{\tau(x)>0\}\). Regret measures forgone treatment gains
-relative to this optimal unconstrained rule. Table~\ref{tab:losses} reports
-both losses and paired differences for class sampling, which was evaluated
+\(\widehat\pi_j(x)=\one\{\widehat\tau_j(x)>0\}\) is its fitted treatment
+rule, and \(\pi^*(x)=\one\{\tau(x)>0\}\) is the optimal treatment rule.
+Table~\ref{tab:losses} reports
+both losses, including results for class sampling, which was evaluated
 at \(p=500\). The class-sampled fits use the same oracle nuisance functions,
 certify weak-order classes on the pooled training and evaluation covariates,
 and apply the default candidate budget to the number of classes.
@@ -595,29 +593,25 @@ and apply the default candidate budget to the number of classes.
 \label{tab:losses}
 \centering\small
 \setlength{\tabcolsep}{5pt}
-\begin{tabular}{@{}rlrr@{}}
+\begin{tabular}{@{}rlr@{\enspace}lr@{\enspace}l@{}}
 \toprule
-\(p\) & Forest & MSE & Regret\\
+\(p\) & Forest & \multicolumn{2}{c}{MSE} & \multicolumn{2}{c}{Regret}\\
 \midrule
-40 & Recodings of \(X_1\) & 0.0361 (0.0012) & 0.0127 (0.0009)\\
- & Recodings of \(X_2\) & 0.0296 (0.0010) & 0.0058 (0.0007)\\
+40 & Recodings of \(X_1\) & 0.0361 & (0.0012) & 0.0127 & (0.0009)\\
+ & Recodings of \(X_2\) & 0.0296 & (0.0010) & 0.0058 & (0.0007)\\
 \addlinespace[2pt]
-100 & Recodings of \(X_1\) & 0.0747 (0.0018) & 0.0222 (0.0006)\\
- & Recodings of \(X_2\) & 0.0615 (0.0018) & 0.0093 (0.0015)\\
+100 & Recodings of \(X_1\) & 0.0747 & (0.0018) & 0.0222 & (0.0006)\\
+ & Recodings of \(X_2\) & 0.0615 & (0.0018) & 0.0093 & (0.0015)\\
 \addlinespace[2pt]
-250 & Recodings of \(X_1\) & 0.1450 (0.0019) & 0.0257 (0.0001)\\
- & Recodings of \(X_2\) & 0.1511 (0.0023) & 0.0438 (0.0026)\\
+250 & Recodings of \(X_1\) & 0.1450 & (0.0019) & 0.0257 & (0.0001)\\
+ & Recodings of \(X_2\) & 0.1511 & (0.0023) & 0.0438 & (0.0026)\\
 \addlinespace[2pt]
-500 & Recodings of \(X_1\) & 0.1962 (0.0015) & 0.0262 (0.0001)\\
- & Recodings of \(X_2\) & 0.2346 (0.0020) & 0.0647 (0.0016)\\
- & Class sampling & 0.3653 (0.0021) & 0.0047 (0.0004)\\
-\midrule
-\multicolumn{4}{l}{Paired differences at \(p=500\)}\\
-\multicolumn{2}{l}{Class sampling minus \(X_1\) recodings} & 0.1690 (0.0014) & -0.0215 (0.0004)\\
-\multicolumn{2}{l}{Class sampling minus \(X_2\) recodings} & 0.1307 (0.0012) & -0.0600 (0.0017)\\
+500 & Recodings of \(X_1\) & 0.1962 & (0.0015) & 0.0262 & (0.0001)\\
+ & Recodings of \(X_2\) & 0.2346 & (0.0020) & 0.0647 & (0.0016)\\
+ & Class sampling & \textbf{0.3653} & (0.0021) & \textbf{0.0047} & (0.0004)\\
 \bottomrule
 \end{tabular}
-\legend{Means across the same 100 replications as the representation comparisons in Table~\ref{tab:mc}. Parentheses give Monte Carlo standard errors. For paired differences, these are the sample standard deviation of the within-replication differences divided by \(\sqrt{100}\). Both class-sampled representations have exactly identical predictions in every replication. Regret is in outcome units per person.}
+\legend{Means across the same 100 replications as the representation comparisons in Table~\ref{tab:mc}. Parentheses give Monte Carlo standard errors. Both class-sampled representations have exactly identical predictions in every replication. Regret is in outcome units per person.}
 \end{table}
 % END GENERATED LOSS TABLE
 
@@ -626,31 +620,31 @@ At \(p=500\), class sampling has mean squared error 0.3653, compared
 with 0.1962 and 0.2346 when recodings of \(X_1\) and \(X_2\)
 are retained. Its mean regret is 0.0047, compared with 0.0262
 and 0.0647. Class sampling improves treatment decisions in this design
-while increasing mean squared CATE error. A sign-based rule
-depends on which side of the treatment cutoff an estimate falls.
-Squared error also penalizes mistakes in effect magnitudes.
+while increasing mean squared CATE error.
 % END GENERATED LOSS DISCUSSION
 
 \FloatBarrier
 
-\subsection{A published random-forest first stage}
+\subsection{Empirical Replication: Job Training and Earnings}
 
-The NSW application in \citet{chernozhukov2022automatic} includes age,
-education, 1974 earnings, and 1975 earnings together with their squares. Since
+I replicate specifications 1 and 2 of \citet{chernozhukov2022automatic} for
+the National Supported Work (NSW) experimental comparison and the Panel Study
+of Income Dynamics (PSID) and Current Population Survey (CPS) comparison groups.
+Across these six cases, the reconstructed full-dictionary ATETs are within
+0.10 published standard errors of the reported estimates.
+
+The outcome-regression dictionaries include age, education, 1974 earnings,
+and 1975 earnings together with their squares. Since
 their observed supports are nonnegative, each raw-square pair offers the same
 CART threshold partitions. I certify classes on the pooled observed and
 treatment-counterfactual rows, including both treatment states for every
 covariate vector used in prediction. The reduction retains one original
 column per class and removes four or five of 24 to 30 columns. It changes only the
 random-forest outcome regression, leaving the samples, folds, Riesz/Lasso
-stage, and orthogonal score fixed. The native comparison uses original
-representative values. A second comparison gives equivalent columns identical
-canonical ranks before either dictionary is fitted. The six cells combine the NSW experimental
-comparison and the PSID and CPS comparison groups with specifications 1 and 2
-of the original paper. The reconstructed full-dictionary ATETs are within
-0.10 published standard errors of the reported estimates.
+stage, and orthogonal score fixed.
 
-Table~\ref{tab:empirical} reports both reductions. One recomputes the
+Table~\ref{tab:empirical} compares the full and reduced dictionaries using
+original column values. One reduction recomputes the
 \texttt{randomForest} regression default, one third of the supplied column
 count rounded down, after removing columns. The other holds its original numerical value fixed.
 All fits use 1,000 trees and the same seed. The final column benchmarks
@@ -685,12 +679,14 @@ CPS / 1 & -152.6 & -14.7 & 22.3 (30.4)\\
 CPS / 2 & -61.1 & +3.8 & 10.1 (20.0)\\
 \bottomrule
 \end{tabular}
-\legend{All amounts are in dollars. Upper-panel parentheses give ATET standard errors. Full-dictionary entries are reconstructed estimates, not the published table entries. Each fit uses 1,000 trees and fixed five-fold cross-fitting. Lower-panel changes pair seed 1 before and after reduction. Seed variation compares the full-dictionary estimate at seed 1 with seeds 2--5. Specifications 1 and 2 have 24 and 30 original columns. Reduction leaves 19 and 25 columns in NSW and CPS, and 20 and 26 in PSID. Recomputed \texttt{mtry} is 6 and 8, versus 8 and 10 when held fixed.}
+\legend{All amounts are in dollars. Upper-panel parentheses give ATET standard errors. Full-dictionary entries are reconstructed estimates. Each fit uses 1,000 trees and fixed five-fold cross-fitting. Lower-panel changes pair seed 1 before and after reduction. Seed variation compares the full-dictionary estimate at seed 1 with seeds 2--5. Specifications 1 and 2 have 24 and 30 original columns. Reduction leaves 19 and 25 columns in NSW and CPS, and 20 and 26 in PSID. Recomputed \texttt{mtry} is 6 and 8, versus 8 and 10 when held fixed.}
 \end{table}
 % END GENERATED EMPIRICAL TABLE
 
 % BEGIN GENERATED EMPIRICAL DISCUSSION
-The ATET changes range from 4 to 177 dollars in absolute value. Every estimate remains positive, and every 95 percent significance classification is unchanged. Representation changes do not uniformly exceed seed variation in the
+The ATET changes range from 4 to 177 dollars in absolute value. All estimates
+remain positive, with no changes in statistical significance at the 5 percent
+level. Representation changes do not uniformly exceed seed variation in the
 aggregate ATET. For example, in NSW specification 2, the default-budget
 reduction changes the estimate by 16 dollars, compared with a mean absolute
 seed change of 176 dollars.
@@ -735,8 +731,9 @@ the cross-fitted outcome-regression contrast over all observations.}
 % END GENERATED CANONICAL TABLE
 
 With canonical ranks, absolute ATET changes range from 29 to 140 dollars,
-and 2.5--8.3 percent of individual contrasts change sign. Aggregate signs and
-95 percent significance classifications remain unchanged. Thus nonlinear
+and 2.5--8.3 percent of individual contrasts change sign. The ATET estimates
+remain positive, with no changes in statistical significance at the 5 percent
+level. Thus nonlinear
 midpoint routing does not account for all of the first-stage sensitivity.
 Column-dependent tie handling and pseudorandom draws can still differ.
 Neither empirical comparison measures accuracy or regret, since the true
@@ -753,11 +750,16 @@ software versions, folds, and seeds.
 \section{Conclusion}\label{sec:conclusion}
 
 Feature subsampling makes column allocation part of a forest's specification.
-The product of path depth and singleton inclusion probability determines the
-weight placed on a CATE component in the forest's limiting target. Growing information-equivalent
-representations can therefore yield opposite CATE signs and treatment rules,
-although every fixed finite representation covered by the theorem recovers under the stated conditions. In the Monte Carlo, class sampling lowers treatment-rule regret while increasing CATE squared error. The Econometrica replication finds movement in individual first stages alongside stable aggregate ATET conclusions. Class sampling prevents sign reversals caused solely by split-equivalent recodings on the certified array without discarding certified split actions.
+Under the conditions of Theorem~\ref{thm:main}, reallocating redundant columns
+can change the limiting CATE and treatment rule without changing covariate
+information. In the Monte Carlo, class sampling lowers treatment-rule regret but increases
+CATE mean squared error. The replication illustrates that aggregate ATET
+comparisons alone can miss changes in individual first-stage contrasts. Sampling certified split classes removes the extra candidate weight assigned
+to redundant columns. Under common class-level randomness and canonical
+routing, equivalent representations give identical predictions on the
+certified array.
 
+\clearpage
 \input{arxiv_appendix}
 
 \begingroup

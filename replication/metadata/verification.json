@@ -73,13 +73,17 @@
     "scope": "The frozen 100-run outputs were reconstructed by the verifier. The portable refit entry was checked at full sample and forest size for replication 1. This release check did not rerun all 100 replications."
   },
   "paper": {
+    "date": "2026-09-10",
     "pages": 20,
     "source_sha256": {
-      "arxiv_appendix.tex": "f3d81227601e6289f8a2d2900769f51abc2400391fa57d07edb967c2f15b81a7",
-      "main.tex": "595373c2ff588c55557c969adb6fbc5dd3153c4c107d18842a3e724edc6629ad",
-      "references.bib": "81873bd273da67abe6d965bf938d214d2e14c337ebd88963ad0ce4c559f7ee5b"
+      "main.tex": "9823e925dd740d51a38f82809a5fff9eaab1953b901f6ada5f1d2758f397d6dd",
+      "arxiv_appendix.tex": "df95b14875af0fed80b66db1554f3b75bafcdce354b0ce0cba5c70295afba0fe",
+      "references.bib": "9f8d7895b8cd3c2e059c80bdb4acdbf93bba63c74ef71c9f5dcee7b82610406a"
     },
-    "pdf_sha256": "46dd9d26e249ed62a284e98644c89a2b92665eb6ab69ebe506540d21c9fe5e60"
+    "pdf_sha256": "76501daa39b389e96ab897032dd340743f27af0981b8feb3a2663f1898ddcdb7",
+    "abstract_words_whitespace": 97,
+    "exhibits": 4,
+    "verification_scope": "Current manuscript rebuilt. Frozen numerical outputs rechecked without rerunning all forest fits."
   },
   "limits": "Numerical reproduction and file integrity do not certify proofs, worldwide priority, or empirical accuracy gains."
 }
