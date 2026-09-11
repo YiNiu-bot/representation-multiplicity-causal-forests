@@ -133,6 +133,8 @@ def main():
     canonical = read(empirical / 'canonical/results.csv')
     assert len(native) == 18 and len(canonical) == 12
     seed_native = read(empirical / 'native_seed/paired_seed_results.csv')
+    native_signs = read(empirical / 'native/paired_prediction_diagnostics.csv')
+    seed_signs = read(empirical / 'native_seed/seed_noise_diagnostics.csv')
     assert len(seed_native) == 30
     table3, table4 = [], []
     for dataset in ('NSW', 'PSID', 'CPS'):
@@ -154,6 +156,17 @@ def main():
             close(old_seed[1], full['atet'], 1e-7)
             changes = [abs(old_seed[s] - old_seed[1]) for s in range(2, 6)]
             label = f'{dataset} / {spec}'
+            sign_rows = {r['variant']: r for r in choose(native_signs) if r['subset'] == 'all'}
+            sign_seeds = [r for r in choose(seed_signs) if r['subset'] == 'all']
+            assert {int(r['comparison_seed']) for r in sign_seeds} == {2, 3, 4, 5}
+            assert all(int(r['reference_seed']) == 1 for r in sign_seeds)
+            rates = [100 * float(r['contrast_sign_disagreement']) for r in sign_seeds]
+            assert all(100 * float(sign_rows[v]['contrast_sign_disagreement']) > max(rates)
+                       for v in ('quotient_default', 'quotient_fixed_mtry'))
+            table_row([label,
+                       f"{100 * float(sign_rows['quotient_default']['contrast_sign_disagreement']):.2f}",
+                       f"{100 * float(sign_rows['quotient_fixed_mtry']['contrast_sign_disagreement']):.2f}",
+                       f'{statistics.mean(rates):.2f} ({max(rates):.2f})'])
             table_row([label, estimate(full), estimate(n['quotient_default']), estimate(n['quotient_fixed_mtry'])])
             table_row([label,
                        f"{float(n['quotient_default']['atet'])-float(full['atet']):+.1f}",

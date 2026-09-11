@@ -647,8 +647,9 @@ Table~\ref{tab:empirical} compares the full and reduced dictionaries using
 original column values. One reduction recomputes the
 \texttt{randomForest} regression default, one third of the supplied column
 count rounded down, after removing columns. The other holds its original numerical value fixed.
-All fits use 1,000 trees and the same seed. The final column benchmarks
-representation changes against four alternative seeds of the full dictionary.
+All fits use 1,000 trees and the same seed. The lower panels report ATET
+changes and individual contrast sign changes, with benchmarks from four
+alternative seeds of the full dictionary.
 
 % BEGIN GENERATED EMPIRICAL TABLE
 \begin{table}[htbp]
@@ -677,29 +678,45 @@ PSID / 1 & +86.0 & +176.8 & 36.4 (61.4)\\
 PSID / 2 & -18.5 & -36.1 & 46.1 (64.8)\\
 CPS / 1 & -152.6 & -14.7 & 22.3 (30.4)\\
 CPS / 2 & -61.1 & +3.8 & 10.1 (20.0)\\
+\midrule
+ & \multicolumn{2}{c}{Individual contrast sign changes (\%)} & Seed variation (\%)\\
+ & Default \texttt{mtry} & Fixed \texttt{mtry} & Mean (max.)\\
+\midrule
+NSW / 1 & 5.88 & 4.20 & 1.75 (2.80)\\
+NSW / 2 & 5.88 & 5.32 & 2.17 (2.80)\\
+PSID / 1 & 4.17 & 2.30 & 1.26 (1.86)\\
+PSID / 2 & 2.96 & 3.07 & 1.70 (1.86)\\
+CPS / 1 & 10.66 & 7.16 & 4.38 (4.58)\\
+CPS / 2 & 11.50 & 7.13 & 4.61 (4.93)\\
 \bottomrule
 \end{tabular}
-\legend{All amounts are in dollars. Upper-panel parentheses give ATET standard errors. Full-dictionary entries are reconstructed estimates. Each fit uses 1,000 trees and fixed five-fold cross-fitting. Lower-panel changes pair seed 1 before and after reduction. Seed variation compares the full-dictionary estimate at seed 1 with seeds 2--5. Specifications 1 and 2 have 24 and 30 original columns. Reduction leaves 19 and 25 columns in NSW and CPS, and 20 and 26 in PSID. Recomputed \texttt{mtry} is 6 and 8, versus 8 and 10 when held fixed.}
+\legend{ATETs and ATET changes are in dollars. Upper-panel parentheses give standard errors. Full-dictionary entries are reconstructed estimates. Each fit uses 1,000 trees and fixed five-fold cross-fitting. Representation comparisons pair seed 1 before and after reduction. Sign changes are percentages of all observations whose cross-fitted contrast \(\widehat m(1,x)-\widehat m(0,x)\) changes sign. Seed benchmarks compare the full dictionary at seed 1 with seeds 2--5 and report the mean and maximum across these four comparisons. Specifications 1 and 2 have 24 and 30 original columns. Reduction leaves 19 and 25 columns in NSW and CPS, and 20 and 26 in PSID. Recomputed \texttt{mtry} is 6 and 8, versus 8 and 10 when held fixed.}
 \end{table}
 % END GENERATED EMPIRICAL TABLE
 
 % BEGIN GENERATED EMPIRICAL DISCUSSION
-The ATET changes range from 4 to 177 dollars in absolute value. All estimates
+Removing split-equivalent columns reverses the sign of the cross-fitted
+outcome-regression contrast \(\widehat m(1,x)-\widehat m(0,x)\) for
+2.3--11.5 percent of all observations and 3.2--11.4 percent of treated
+observations. The corresponding mean seed benchmarks range from 1.3 to
+4.6 percent and from 1.8 to 3.5 percent. In all six sample--specification
+cases, both reductions produce a higher sign-change rate over all observations
+than any of the four seed-only comparisons in Table~\ref{tab:empirical}.
+Stable aggregate conclusions therefore do not imply stable signs for
+individual first-stage contrasts.
+
+By comparison, the ATET changes range from 4 to 177 dollars in absolute value. All estimates
 remain positive, with no changes in statistical significance at the 5 percent
 level. Representation changes do not uniformly exceed seed variation in the
 aggregate ATET. For example, in NSW specification 2, the default-budget
 reduction changes the estimate by 16 dollars, compared with a mean absolute
 seed change of 176 dollars.
 
-For the cross-fitted outcome regression \(\widehat m(w,x)\), the sign of
-\(\widehat m(1,x)-\widehat m(0,x)\) changes for 2.3--11.5 percent of all
-observations and 3.2--11.4 percent of treated observations.
-The corresponding seed benchmarks range from 1.3 to 4.6 percent
-and from 1.8 to 3.5 percent.
-% END GENERATED EMPIRICAL DISCUSSION
-
-Native midpoint cutoffs can route evaluation observations differently after
-a nonlinear recoding. Table~\ref{tab:canonical} removes this difference by
+These sign changes may partly reflect differences in cutoff routing, not
+just candidate sampling. With nonlinear recodings, native midpoint cutoffs
+can send the same evaluation observation to different leaves.
+To remove this source of variation, Table~\ref{tab:canonical} compares the
+full and reduced dictionaries after
 assigning identical dense ranks to equivalent columns on the pooled observed
 and counterfactual array. Both dictionaries use these same ranks, the original
 numerical \texttt{mtry}, folds, seed, and Riesz estimates. Only the forest inputs
