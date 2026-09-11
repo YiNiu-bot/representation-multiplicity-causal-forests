@@ -76,11 +76,11 @@
     "date": "2026-09-10",
     "pages": 20,
     "source_sha256": {
-      "main.tex": "1458fda061d3cd48fe09b0d251fc634651302d648e39ad557631815d963896f9",
+      "main.tex": "2270b39d3ce794d612b71f62e260beefbfadcc38afb1902378036b3bd7026946",
       "arxiv_appendix.tex": "df95b14875af0fed80b66db1554f3b75bafcdce354b0ce0cba5c70295afba0fe",
       "references.bib": "9f8d7895b8cd3c2e059c80bdb4acdbf93bba63c74ef71c9f5dcee7b82610406a"
     },
-    "pdf_sha256": "4b2ec52af9181c6ef0e8cc691e19c028c1f8e1a881bbab467067a0ad25738e81",
+    "pdf_sha256": "67eafc7615641b1fc774fb909cfd4a27982cd7af462b75f2f9d377f3bd6b2d92",
     "abstract_words_whitespace": 97,
     "exhibits": 4,
     "verification_scope": "Current manuscript rebuilt. Frozen numerical outputs rechecked without rerunning all forest fits."
