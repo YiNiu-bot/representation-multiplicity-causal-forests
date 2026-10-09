@@ -1,8 +1,8 @@
 {
   "date": "2026-10-09",
   "sha256": {
-    "paper/representation_multiplicity_causal_forests.pdf": "5e5559e28ea99ae4a81e78ba881b7bf122507d319157a9bc096e12dc14a5658f",
-    "paper/source/main.tex": "c40fedf4eaa5cc1df685b49f1d52c78a03696159e416d9417a9d1371ba50accb",
+    "paper/representation_multiplicity_causal_forests.pdf": "e523e9472a2e114cbc87d4ede7a25371bc4db49fc607c6aa036a499d1a2b6bf2",
+    "paper/source/main.tex": "fcbbece8852a0d54363f7e9d900024f5cea79f1f989e08593f4607c4a0e4d391",
     "replication/README.md": "17de7327e698c7ff6df2074b5718eb2de8ebae51b1cbf6c8367570a646134aa5",
     "replication/code/auto_dml/class_sampling.R": "b3ec687a1814a0b15958b87cde7593523c94919d061f7117292b23e945d9d7e7",
     "replication/code/auto_dml/run_literal_rf.R": "5ced6d20204b96a77abc6d224ba4de3416f46dc9d7a8435a9b2b54f1359e87e9",
@@ -25,6 +25,6 @@
     "scripts/build_paper.sh": "8b7002f7adc5b4786429d5cb399cac36ddd489811c9957313afd53429f31381f",
     "scripts/run_empirical.py": "2acff5881380a815a423bb9130d53664dd3189d08cadb6f5ffd4bd3dfb9008d5",
     "scripts/run_monte_carlo.py": "2f09a5dbd60ded5e3a1bb43fbb0ee42397c841bad3633b7cfa40b1ec07cd6843",
-    "scripts/verify_replication.py": "b8fd4d83044d2ee57f938e29c1f38a7b05d29b955b76110201bcc197585f83a9"
+    "scripts/verify_replication.py": "806773cc79ebf7d7880d58f8be85bad434ca287b76528c38e3ee9d4cfe0e7adf"
   }
 }

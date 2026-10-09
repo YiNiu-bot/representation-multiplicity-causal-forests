@@ -56,8 +56,8 @@ def check_table_one(source):
     for values in list(grouped.values()) + list(paired.values()):
         require(set(values) == set(range(1, 11)), "Incomplete Monte Carlo replications.")
 
-    table = source.split("% BEGIN GENERATED NODE GRID TABLE", 1)[1].split(
-        "% END GENERATED NODE GRID TABLE", 1)[0].splitlines()
+    table = source.split(r"\label{tab:mc}", 1)[1].split(
+        r"\end{table}", 1)[0].splitlines()
     rows = [i for i, line in enumerate(table) if re.match(r"^\d+ &", line)]
     require(len(rows) == 15, "Table 1 must contain fifteen rows.")
     index = 0
@@ -92,8 +92,8 @@ def check_table_two(source):
     results = read_csv(ROOT / "replication/results/empirical/results.csv")
     seeds = read_csv(ROOT / "replication/results/empirical/seed_results.csv")
     require(len(results) == 9 and len(seeds) == 36, "Expected nine applications and four seeds each.")
-    table = source.split("% BEGIN GENERATED EMPIRICAL TABLE", 1)[1].split(
-        "% END GENERATED EMPIRICAL TABLE", 1)[0].splitlines()
+    table = source.split(r"\label{tab:empirical}", 1)[1].split(
+        r"\end{table}", 1)[0].splitlines()
     require(r"\(|\Delta\mathrm{ATET}|\)" in "\n".join(table), "Seed column must show absolute ATET changes.")
     start = next(i for i, line in enumerate(table) if line.startswith("NSW & 1"))
     lines = [line for line in table[start:] if " & " in line]
