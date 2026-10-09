@@ -1,199 +1,169 @@
 #!/usr/bin/env python3
-"""Verify frozen outputs and reconstruct the manuscript's numerical tables."""
-import csv
+"""Reconstruct both manuscript tables from the released CSVs."""
+
+import argparse
 from collections import defaultdict
+import csv
 import hashlib
 import json
 import math
-import re
 from pathlib import Path
+import re
 import statistics
 
+
 ROOT = Path(__file__).resolve().parents[1]
-RESULTS = ROOT / 'replication/results'
+MANIFEST = ROOT / "replication/metadata/manifest.json"
 
 
-def read(path):
-    with path.open(newline='') as stream:
+def read_csv(path):
+    with path.open(newline="") as stream:
         return list(csv.DictReader(stream))
 
 
-def close(a, b, tol=1e-10):
-    assert math.isfinite(float(a)) and math.isfinite(float(b))
-    assert abs(float(a) - float(b)) <= tol, (a, b)
+def require(condition, message):
+    if not condition:
+        raise ValueError(message)
 
 
-def summary(rows, keys):
-    groups = defaultdict(list)
-    for row in rows:
-        groups[tuple(row[k] for k in keys)].append(row)
-    output = {}
-    for key, values in groups.items():
-        assert sorted(int(v['replication']) for v in values) == list(range(1, 101)), key
-        x = [float(v['value']) for v in values]
-        assert all(math.isfinite(v) for v in x)
-        output[key] = {'mean': statistics.mean(x), 'mcse': statistics.stdev(x) / 10}
-    return output
+def numeric_cells(line):
+    content = line.split(r"\\", 1)[0]
+    return [float(re.sub(r"[^0-9.+-]", "", cell))
+            for cell in content.split(" & ") if re.search(r"\d", cell)]
+
+
+def mean_and_mcse(values):
+    require(len(values) == 10, "Every Monte Carlo cell must have ten replications.")
+    return statistics.mean(values), statistics.stdev(values) / math.sqrt(len(values))
+
+
+def check_table_one(source):
+    metrics = read_csv(ROOT / "replication/results/monte_carlo/metrics.csv")
+    comparisons = read_csv(ROOT / "replication/results/monte_carlo/comparisons.csv")
+    grouped = defaultdict(dict)
+    paired = defaultdict(dict)
+    for row in metrics:
+        key = (int(row["node_size"]), int(row["multiplicity"]), row["variant"], row["metric"])
+        replication = int(row["replication"])
+        require(replication not in grouped[key], "Duplicate Monte Carlo observation.")
+        grouped[key][replication] = float(row["value"])
+    for row in comparisons:
+        if row["metric"] == "sign_disagreement":
+            key = (int(row["node_size"]), int(row["multiplicity"]), row["regime"])
+            replication = int(row["replication"])
+            require(replication not in paired[key], "Duplicate paired comparison.")
+            paired[key][replication] = float(row["value"])
+    for values in list(grouped.values()) + list(paired.values()):
+        require(set(values) == set(range(1, 11)), "Incomplete Monte Carlo replications.")
+
+    table = source.split("% BEGIN GENERATED NODE GRID TABLE", 1)[1].split(
+        "% END GENERATED NODE GRID TABLE", 1)[0].splitlines()
+    rows = [i for i, line in enumerate(table) if re.match(r"^\d+ &", line)]
+    require(len(rows) == 15, "Table 1 must contain fifteen rows.")
+    index = 0
+    for node in (5, 10, 20):
+        for multiplicity in (1, 5, 10, 40, 400):
+            means, errors = [], []
+            for regime in ("fixed", "default", "linear"):
+                cells = [paired[node, multiplicity, regime]]
+                cells.extend(grouped[node, multiplicity, f"{regime}_x{h}", metric]
+                             for metric in ("mse", "regret") for h in (1, 2))
+                for j, values in enumerate(cells):
+                    mean, mcse = mean_and_mcse([100 * value for value in values.values()])
+                    digits = 1 if j == 0 else 2
+                    means.append(round(mean, digits))
+                    errors.append(round(mcse, digits))
+                for metric in ("mse", "regret", "wrong_sign"):
+                    for replication in range(1, 11):
+                        reference = grouped[node, 1, f"class_{regime}", metric][replication]
+                        current = grouped[node, multiplicity, f"class_{regime}", metric][replication]
+                        require(current == reference, "Class-sampled results must coincide.")
+                if multiplicity == 1:
+                    require(all(value == 0 for value in cells[0].values()), "Baseline SR must be zero.")
+            row = rows[index]
+            require(numeric_cells(table[row]) == [float(multiplicity), *means],
+                    f"Table 1 means differ at node size {node}, multiplicity {multiplicity}.")
+            require(numeric_cells(table[row + 1]) == errors,
+                    f"Table 1 MCSEs differ at node size {node}, multiplicity {multiplicity}.")
+            index += 1
+
+
+def check_table_two(source):
+    results = read_csv(ROOT / "replication/results/empirical/results.csv")
+    seeds = read_csv(ROOT / "replication/results/empirical/seed_results.csv")
+    require(len(results) == 9 and len(seeds) == 36, "Expected nine applications and four seeds each.")
+    table = source.split("% BEGIN GENERATED EMPIRICAL TABLE", 1)[1].split(
+        "% END GENERATED EMPIRICAL TABLE", 1)[0].splitlines()
+    require(r"\(|\Delta\mathrm{ATET}|\)" in "\n".join(table), "Seed column must show absolute ATET changes.")
+    start = next(i for i, line in enumerate(table) if line.startswith("NSW & 1"))
+    lines = [line for line in table[start:] if " & " in line]
+    require(len(lines) == 27, "Table 2 must contain three lines for each application.")
+    for index, row in enumerate(results):
+        dataset, spec = row["dataset"], int(row["specification"])
+        selected = [seed for seed in seeds if seed["dataset"] == dataset
+                    and int(seed["specification"]) == spec]
+        require({int(seed["seed"]) for seed in selected} == {2, 3, 4, 5}, "Incomplete seed benchmark.")
+        full = float(row["full_atet"])
+        deltas = [float(seed["abs_atet_change"]) for seed in selected]
+        sign_changes = [float(seed["sr"]) for seed in selected]
+        for field, expected in (("seed_delta_mean", statistics.mean(deltas)),
+                                ("seed_delta_max", max(deltas)),
+                                ("seed_sr_mean", statistics.mean(sign_changes)),
+                                ("seed_sr_max", max(sign_changes))):
+            require(abs(float(row[field]) - expected) < 1e-8, f"Seed summary differs for {dataset} {spec}.")
+        expected_first = [float(spec), round(full)]
+        expected_second = [round(float(row["full_se"]))]
+        expected_third = []
+        for method in ("default", "fixed", "class"):
+            atet, delta = float(row[f"{method}_atet"]), float(row[f"{method}_delta"])
+            require(abs(delta - (atet - full)) < 1e-8, "ATET change differs from the level comparison.")
+            expected_first.extend((round(atet), round(float(row[f"{method}_sr"]), 1)))
+            expected_second.append(round(float(row[f"{method}_se"])))
+            expected_third.append(round(delta))
+            significant = abs(atet / float(row[f"{method}_se"])) > 1.959963984540054
+            baseline = abs(full / float(row["full_se"])) > 1.959963984540054
+            require(atet > 0 and significant == baseline, "ATET significance classification changed.")
+        expected_first.extend((round(float(row["seed_delta_mean"])), round(float(row["seed_sr_mean"]), 1)))
+        expected_second.extend((round(float(row["seed_delta_max"])), round(float(row["seed_sr_max"]), 1)))
+        for offset, expected in enumerate((expected_first, expected_second, expected_third)):
+            require(numeric_cells(lines[3 * index + offset]) == expected,
+                    f"Table 2 differs for {dataset} specification {spec}, line {offset + 1}.")
+        require(float(row["class_sr_between_representations"]) == 0, "Class-sampled SR must be zero.")
+        require(f"{float(row['full_se']):.2f}" == f"{float(row['published_se']):.2f}", "Published SE mismatch.")
+        if (dataset, spec) == ("CPS", 3):
+            require(f"{full:.2f}" == "1906.63", "CPS specification 3 baseline changed.")
+        else:
+            require(f"{full:.2f}" == f"{float(row['published_atet']):.2f}", "Published ATET mismatch.")
+
+
+def payload_hashes():
+    paths = sorted(path for folder in (ROOT / "paper", ROOT / "replication", ROOT / "scripts")
+                   for path in folder.rglob("*")
+                   if path.is_file() and path != MANIFEST
+                   and path != ROOT / "paper/source/main.pdf"
+                   and path.suffix in {".csv", ".R", ".py", ".sh", ".tex", ".pdf", ".md"})
+    return {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in paths}
 
 
 def main():
-    manifest = read(ROOT / 'replication/metadata/manifest.csv')
-    listed = set()
-    for row in manifest:
-        file = ROOT / row['file']
-        assert file.is_file() and not file.is_symlink(), row['file']
-        assert hashlib.sha256(file.read_bytes()).hexdigest() == row['sha256'], row['file']
-        listed.add(row['file'])
-    actual = {str(p.relative_to(ROOT)) for p in ROOT.rglob('*') if p.is_file()
-              and '.git' not in p.parts and 'rerun_outputs' not in p.parts
-              and '__pycache__' not in p.parts
-              and p.suffix not in ('.aux', '.bbl', '.blg', '.fdb_latexmk', '.fls', '.log', '.out')
-              and str(p.relative_to(ROOT)) not in ('replication/metadata/manifest.csv', 'paper/source/main.pdf')}
-    assert actual == listed, {'unlisted': sorted(actual-listed), 'missing': sorted(listed-actual)}
-
-    mc = RESULTS / 'monte_carlo'
-    dimension = summary(read(mc / 'dimension_metrics.csv'), ['dimension', 'method', 'metric'])
-    seed = summary(read(mc / 'seed_benchmark_metrics.csv'), ['comparison', 'metric'])
-    losses_raw = read(mc / 'prediction_losses.csv')
-    assert len(losses_raw) == 8000
-    losses = summary(losses_raw, ['dimension', 'method', 'metric'])
-    indexed = {(r['replication'], r['dimension'], r['method'], r['metric']): float(r['value']) for r in losses_raw}
-    assert len(indexed) == 8000
-    for r in range(1, 101):
-        for metric in ('mse', 'mae', 'mean_error', 'wrong_sign', 'regret', 'value_gain', 'oracle_gain', 'treatment_share'):
-            close(indexed[str(r), '500', 'class_x1', metric], indexed[str(r), '500', 'class_x2', metric], 0)
-        for p in ('40', '100', '250', '500'):
-            methods = ['ordinary_x1', 'ordinary_x2'] + (['class_x1', 'class_x2'] if p == '500' else [])
-            for method in methods:
-                close(indexed[str(r), p, method, 'regret'],
-                      indexed[str(r), p, method, 'oracle_gain'] - indexed[str(r), p, method, 'value_gain'])
-    pairs_raw = read(mc / 'paired_loss_differences.csv')
-    for row in pairs_raw:
-        a, b = row['method'].split('_minus_')
-        r, p, m = row['replication'], row['dimension'], row['metric']
-        close(row['value'], indexed[r, p, a, m] - indexed[r, p, b, m])
-    paired = summary(pairs_raw, ['dimension', 'method', 'metric'])
-    for name, calculated in [('mc_loss_summary.csv', losses), ('mc_paired_loss_summary.csv', paired)]:
-        for row in read(mc / name):
-            z = calculated[row['dimension'], row['method'], row['metric']]
-            close(row['mean'], z['mean'])
-            close(row['mcse'], z['mcse'])
-
-    source = (ROOT / 'paper/source/main.tex').read_text()
-    source = re.sub(r'\\textbf\{([^{}]*)\}', r'\1', source)
-    def displayed(number, places, commas=False):
-        token = format(number, (',' if commas else '') + f'.{places}f')
-        assert token in source, ('Number absent from manuscript source', token)
-
-    def table_row(tokens):
-        row = ' & '.join(tokens) + r'\\'
-        normalize = lambda text: re.sub(r'\s+', ' ', text).strip()
-        assert normalize(row) in normalize(source), ('Table row does not match outputs', row)
-
-    def estimate(row):
-        return f"{float(row['atet']):,.1f} ({float(row['se']):,.1f})"
-
-    table1 = []
-    for p in ('40', '100', '250', '500'):
-        row = {'dimension': int(p)}
-        for metric in ('sign_reversal', 'strong_reversal_010'):
-            z = dimension[p, 'ordinary_default', metric]
-            row[metric] = {k: 100*v for k, v in z.items()}
-            displayed(100*z['mean'], 2)
-        table1.append(row)
-        sign = dimension[p, 'ordinary_default', 'sign_reversal']
-        strong = dimension[p, 'ordinary_default', 'strong_reversal_010']
-        precision = 3 if p == '40' else 2
-        table_row([rf'\(p={p}\), representation change', str(int(p) + 8),
-                   f"{100*sign['mean']:.2f} ({100*sign['mcse']:.2f})",
-                   f"{100*strong['mean']:.2f} ({100*strong['mcse']:.{precision}f})"])
-    close(dimension['500', 'class_sampled_default', 'mean_absolute_prediction_change']['mean'], 0, 0)
-    table1.append({'seed_control': seed['second_seed', 'sign_reversal']})
-    for key, z in losses.items():
-        if key[2] in ('mse', 'regret') and key[1] != 'class_x2':
-            displayed(z['mean'], 4)
-            displayed(z['mcse'], 4)
-    for p in ('40', '100', '250', '500'):
-        for method, label, dimension_label in (
-                ('ordinary_x1', r'Recodings of \(X_1\)', p),
-                ('ordinary_x2', r'Recodings of \(X_2\)', '')):
-            mse, regret = [losses[p, method, metric] for metric in ('mse', 'regret')]
-            table_row([dimension_label, label, f"{mse['mean']:.4f}",
-                       f"({mse['mcse']:.4f})", f"{regret['mean']:.4f}",
-                       f"({regret['mcse']:.4f})"])
-    mse, regret = [losses['500', 'class_x1', metric] for metric in ('mse', 'regret')]
-    table_row(['', 'Class sampling', f"{mse['mean']:.4f}",
-               f"({mse['mcse']:.4f})", f"{regret['mean']:.4f}",
-               f"({regret['mcse']:.4f})"])
-    # Paired differences remain checked against raw outputs above, even when
-    # the manuscript reports only the levels of MSE and regret.
-
-    empirical = RESULTS / 'empirical'
-    native = read(empirical / 'native/paired_seed_results.csv')
-    canonical = read(empirical / 'canonical/results.csv')
-    assert len(native) == 18 and len(canonical) == 12
-    seed_native = read(empirical / 'native_seed/paired_seed_results.csv')
-    native_signs = read(empirical / 'native/paired_prediction_diagnostics.csv')
-    seed_signs = read(empirical / 'native_seed/seed_noise_diagnostics.csv')
-    assert len(seed_native) == 30
-    table3, table4 = [], []
-    for dataset in ('NSW', 'PSID', 'CPS'):
-        for spec in ('1', '2'):
-            def choose(rows):
-                return [r for r in rows if r['dataset'] == dataset and r['specification'] == spec]
-            n = {r['variant']: r for r in choose(native)}
-            c = {r['variant']: r for r in choose(canonical)}
-            full = n['published_full']
-            for row in list(n.values()) + list(c.values()):
-                assert int(row['seed']) == 1 and int(row['ntree']) == 1000
-                assert float(row['se']) > 0 and int(row['treated']) == 185
-                close(row['ci_low'], float(row['atet'])-1.96*float(row['se']), 1e-7)
-                close(row['ci_high'], float(row['atet'])+1.96*float(row['se']), 1e-7)
-                displayed(float(row['atet']), 1, True)
-                displayed(float(row['se']), 1, True)
-            old_seed = {int(r['seed']): float(r['atet']) for r in choose(seed_native)}
-            assert set(old_seed) == set(range(1, 6))
-            close(old_seed[1], full['atet'], 1e-7)
-            changes = [abs(old_seed[s] - old_seed[1]) for s in range(2, 6)]
-            label = f'{dataset} / {spec}'
-            sign_rows = {r['variant']: r for r in choose(native_signs) if r['subset'] == 'all'}
-            sign_seeds = [r for r in choose(seed_signs) if r['subset'] == 'all']
-            assert {int(r['comparison_seed']) for r in sign_seeds} == {2, 3, 4, 5}
-            assert all(int(r['reference_seed']) == 1 for r in sign_seeds)
-            rates = [100 * float(r['contrast_sign_disagreement']) for r in sign_seeds]
-            assert all(100 * float(sign_rows[v]['contrast_sign_disagreement']) > max(rates)
-                       for v in ('quotient_default', 'quotient_fixed_mtry'))
-            table_row([label,
-                       f"{100 * float(sign_rows['quotient_default']['contrast_sign_disagreement']):.2f}",
-                       f"{100 * float(sign_rows['quotient_fixed_mtry']['contrast_sign_disagreement']):.2f}",
-                       f'{statistics.mean(rates):.2f} ({max(rates):.2f})'])
-            table_row([label, estimate(full), estimate(n['quotient_default']), estimate(n['quotient_fixed_mtry'])])
-            table_row([label,
-                       f"{float(n['quotient_default']['atet'])-float(full['atet']):+.1f}",
-                       f"{float(n['quotient_fixed_mtry']['atet'])-float(full['atet']):+.1f}",
-                       f'{statistics.mean(changes):.1f} ({max(changes):.1f})'])
-            table3.append({'dataset': dataset, 'specification': int(spec),
-                           'native': n, 'seed_mean_absolute_change': statistics.mean(changes),
-                           'seed_maximum_change': max(changes)})
-            assert int(c['canonical_full']['mtry']) == int(c['canonical_reduced']['mtry']) == (8 if spec == '1' else 10)
-            delta = float(c['canonical_reduced']['atet']) - float(c['canonical_full']['atet'])
-            diag = next(r for r in choose(read(empirical / 'canonical/diagnostics.csv')) if r['subset'] == 'all')
-            close(delta, diag['atet_difference'], 1e-7)
-            table_row([label, estimate(c['canonical_full']), estimate(c['canonical_reduced']),
-                       f'{delta:+.1f}', f"{100*float(diag['contrast_sign_disagreement']):.2f}"])
-            table4.append({'dataset': dataset, 'specification': int(spec), 'canonical': c, 'change': delta})
-            for row in read(empirical / 'canonical' / f'{dataset.lower()}_spec{spec}_certificate.csv'):
-                assert row['identical_canonical_values'] == 'TRUE'
-            for row in read(empirical / 'canonical' / f'{dataset.lower()}_spec{spec}_score_checks.csv'):
-                close(row['score_reconstruction_gap'], 0, 1e-8)
-    assert 'Chi, Chien-Ming' in (ROOT / 'paper/source/references.bib').read_text()
-    print(json.dumps({'status': 'PASS', 'files_checked': len(manifest),
-                      'scope': 'Frozen-output reconstruction, not forest refitting or proof validation',
-                      'table1': table1,
-                      'table2_losses': {' | '.join(k): v for k, v in losses.items() if k[2] in ('mse', 'regret')},
-                      'table2_paired': {' | '.join(k): v for k, v in paired.items() if k[1].startswith('class_') and k[2] in ('mse', 'regret')},
-                      'table3': table3, 'table4': table4}, indent=2))
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--write-manifest", action="store_true")
+    args = parser.parse_args()
+    source = (ROOT / "paper/source/main.tex").read_text()
+    check_table_one(source)
+    check_table_two(source)
+    for row in read_csv(ROOT / "replication/metadata/empirical_checks.csv"):
+        require(row["passed"] == "TRUE", "A saved empirical fit check failed.")
+    hashes = payload_hashes()
+    if args.write_manifest:
+        MANIFEST.parent.mkdir(parents=True, exist_ok=True)
+        MANIFEST.write_text(json.dumps({"date": "2026-10-09", "sha256": hashes}, indent=2) + "\n")
+    else:
+        manifest = json.loads(MANIFEST.read_text())
+        require(manifest["sha256"] == hashes, "Replication file hashes differ from the manifest.")
+    print("Verified Table 1 (15 rows), Table 2 (9 rows), class invariance, seed benchmarks, and file hashes.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

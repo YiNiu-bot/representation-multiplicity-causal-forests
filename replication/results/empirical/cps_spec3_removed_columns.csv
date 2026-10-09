@@ -1,0 +1,9 @@
+"dataset","covariate","treatment_interaction","removed_dictionary_column","retained_dictionary_column","polynomial_x_column","maximum_affine_difference"
+"CPS","age",FALSE,49,3,47,8.30446822419617e-14
+"CPS","education",FALSE,54,4,52,7.49400541621981e-14
+"CPS","re74",FALSE,69,8,67,5.49116307979602e-13
+"CPS","re75",FALSE,104,9,102,6.95665747230123e-13
+"CPS","age",TRUE,220,174,47,8.30446822419617e-14
+"CPS","education",TRUE,225,175,52,7.49400541621981e-14
+"CPS","re74",TRUE,240,179,67,5.49116307979602e-13
+"CPS","re75",TRUE,275,180,102,6.95665747230123e-13

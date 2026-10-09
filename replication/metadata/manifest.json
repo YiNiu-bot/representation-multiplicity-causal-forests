@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-09",
+  "sha256": {
+    "paper/representation_multiplicity_causal_forests.pdf": "5e5559e28ea99ae4a81e78ba881b7bf122507d319157a9bc096e12dc14a5658f",
+    "paper/source/main.tex": "c40fedf4eaa5cc1df685b49f1d52c78a03696159e416d9417a9d1371ba50accb",
+    "replication/README.md": "17de7327e698c7ff6df2074b5718eb2de8ebae51b1cbf6c8367570a646134aa5",
+    "replication/code/auto_dml/class_sampling.R": "b3ec687a1814a0b15958b87cde7593523c94919d061f7117292b23e945d9d7e7",
+    "replication/code/auto_dml/run_literal_rf.R": "5ced6d20204b96a77abc6d224ba4de3416f46dc9d7a8435a9b2b54f1359e87e9",
+    "replication/code/auto_dml/run_paired_coordinates.R": "62286c815872dc3d241eda4042f358fd40ae45049a2e4231599c468f78b2b002",
+    "replication/code/auto_dml/run_spec3_known_multiplicity.R": "076444e523d3fb1ff084f461efaaefbc65203778ad9d3806d034bcd85c7ea8c3",
+    "replication/code/auto_dml/verify_paired_coordinates.R": "f1d64b459fe974d3b7daefeaf75f3419b974995227aeffdd71c0f694c790482c",
+    "replication/code/auto_dml/verify_spec3_known_multiplicity.R": "2267b076b53748210321e119a00f89505fa3241ab20608ded7996004bbd9cdee",
+    "replication/code/monte_carlo/class_sampled_grf.R": "72187371c71a582a0a69b9d9b90a110e54e801cb0daf52f13fc006676a9c6bdb",
+    "replication/code/monte_carlo/run_multiplicity_node_grid.R": "411f1518df6a895fa661346fb68c4cd7d26fdac8fd6f5370f78c9835fd8b7dcc",
+    "replication/code/monte_carlo/validate_node_grid_predictions.R": "3998cd4774dd168fd5c9477f26780cdd59d7e79ef1bebd43667285f6ebdaf3b2",
+    "replication/metadata/empirical_checks.csv": "30ba0a8f18b9eb787510d6921084d3b030d4a008fb7d1cad622839b1f8666879",
+    "replication/results/empirical/cps_spec3_removed_columns.csv": "683ec8f5bb2e8ba373ae6cddb8e5314edd49297a1bab29ae4b03fbe8924f0fe1",
+    "replication/results/empirical/nsw_spec3_removed_columns.csv": "554b09463852fc9a43c595d180427e490449546f55e49ac274c781b310e71c67",
+    "replication/results/empirical/psid_spec3_removed_columns.csv": "ebde43b6d55a9503dfce8ce0d0eda97c405856965e6838925bfbcd425f96c2f9",
+    "replication/results/empirical/results.csv": "26c93a579035c12d20e93735a4a6cfccbd7ee20bf3f2d0020ffee844465803a0",
+    "replication/results/empirical/seed_results.csv": "08485b5a33f69a1b5d54adc451cce4d117d950eba5f34927bb90e96b3cd04708",
+    "replication/results/monte_carlo/comparisons.csv": "ab02f949021dbfc8bf8398b0954345e78fa6e58cd2c42a0679dd2c053fdba3af",
+    "replication/results/monte_carlo/depth.csv": "0bdd53275180c15d4480f0eef07babf7232911a712d25e7de66b06dcbf17f7e0",
+    "replication/results/monte_carlo/metrics.csv": "4723dda573256d877ec08484a59758f59c0d2efc31cb7058cd607c0c6a647ef3",
+    "scripts/build_paper.sh": "8b7002f7adc5b4786429d5cb399cac36ddd489811c9957313afd53429f31381f",
+    "scripts/run_empirical.py": "2acff5881380a815a423bb9130d53664dd3189d08cadb6f5ffd4bd3dfb9008d5",
+    "scripts/run_monte_carlo.py": "2f09a5dbd60ded5e3a1bb43fbb0ee42397c841bad3633b7cfa40b1ec07cd6843",
+    "scripts/verify_replication.py": "b8fd4d83044d2ee57f938e29c1f38a7b05d29b955b76110201bcc197585f83a9"
+  }
+}
